@@ -95,6 +95,15 @@ class Tournament(BaseModel):
     name_ch: str
 
 
+class Venue(BaseModel):
+    """Venue information."""
+    model_config = ConfigDict(populate_by_name=True)
+
+    code: str
+    name_en: str
+    name_ch: str
+
+
 class TvChannel(BaseModel):
     """TV channel information."""
     model_config = ConfigDict(populate_by_name=True)
@@ -102,6 +111,14 @@ class TvChannel(BaseModel):
     code: str
     name_en: str
     name_ch: str
+
+
+class LiveEvent(BaseModel):
+    """Live event information."""
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str
+    code: str
 
 
 class RunningResult(BaseModel):
@@ -164,6 +181,25 @@ class FoPool(BaseModel):
     lines: list[Line] = []
 
 
+class NgsInfo(BaseModel):
+    """Next Goal Scorer info."""
+    model_config = ConfigDict(populate_by_name=True)
+
+    str: str
+    name_en: str
+    name_ch: str
+    instNo: int
+
+
+class AgsInfo(BaseModel):
+    """Anytime Goal Scorer info."""
+    model_config = ConfigDict(populate_by_name=True)
+
+    str: str
+    name_en: str
+    name_ch: str
+
+
 class PoolInfo(BaseModel):
     """Pool availability information."""
     model_config = ConfigDict(populate_by_name=True)
@@ -172,7 +208,24 @@ class PoolInfo(BaseModel):
     inplayPools: list[str] = []
     sellingPools: list[str] = []
     definedPools: list[str] = []
-    # ntsInfo and agsInfo are complex nested structures, add if needed
+    ntsInfo: list[str] = []  # Next Team to Score info (e.g., ["4:H", "2:H"])
+    entInfo: list[str] = []
+    ngsInfo: list[NgsInfo] = []
+    agsInfo: list[AgsInfo] = []
+
+
+class Remark(BaseModel):
+    """Admin operation remark."""
+    model_config = ConfigDict(populate_by_name=True)
+
+    typ: Optional[str] = None
+
+
+class AdminOperation(BaseModel):
+    """Admin operation information."""
+    model_config = ConfigDict(populate_by_name=True)
+
+    remark: Optional[Remark] = None
 
 
 class Match(BaseModel):
@@ -194,10 +247,15 @@ class Match(BaseModel):
     awayTeam: Team
     tournament: Tournament
 
-    venue: Optional[str] = None
+    venue: Optional[Venue] = None
     tvChannels: list[TvChannel] = []
+    liveEvents: list[LiveEvent] = []
+    featureStartTime: str = ""
+    featureMatchSequence: str = ""
     poolInfo: Optional[PoolInfo] = None
     runningResult: Optional[RunningResult] = None
+    runningResultExtra: Optional[RunningResult] = None
+    adminOperation: Optional[AdminOperation] = None
     foPools: list[FoPool] = []
 
 

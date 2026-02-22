@@ -91,12 +91,14 @@ HKJCScrapper/
 
 - **Endpoint**: `https://info.cld.hkjc.com/graphql/base/` (POST)
 - **Authentication**: None, but requires browser-like headers
-- **Request flow**: OPTIONS preflight -> POST basic match list -> OPTIONS -> POST detailed match list (with odds) -> POST basic match list
+- **Query Whitelisting**: API only accepts specific pre-approved query formats. Custom queries return `"query isn't whitelisted"` error. Must use exact query structure from `resources/single-match-req-1.txt` with all parameters defined.
+- **Request flow**: OPTIONS preflight -> POST match list query (with odds types filter)
 - **Response structure**: `{ "data": { "matches": [ ... ] } }`
-- **Each match contains**: id, frontEndId, matchDate, kickOffTime, status, homeTeam, awayTeam, tournament, poolInfo, runningResult, foPools (odds data)
+- **Field naming**: Mix of snake_case (name_en, name_ch) and camelCase (frontEndId, kickOffTime)
+- **Each match contains**: id, frontEndId, matchDate, kickOffTime, status, homeTeam, awayTeam, tournament, poolInfo, runningResult, foPools (odds data), liveEvents, venue, tvChannels, and more
 - **foPools structure**: Each pool has an `oddsType` (e.g. "HHA"), `lines` (each with a `condition` like "-2.0"), and `combinations` (each with `currentOdds` and `selections`)
 - **Full API guide**: `docs/hkjc_api_guide.txt` (Chinese, comprehensive)
-- **Sample response**: `docs/api/base_api_sample_response.json`
+- **Sample responses**: `docs/api/base_api_sample_response.json` and `resources/single-match-res-1.json` (real API capture)
 
 ### Odds Type Codes
 HAD (Home/Away/Draw), EHA (Early HAD), HHA (Handicap), HDC (Asian Handicap), HIL (Hi-Lo), CHL (Corner Hi-Lo), CRS (Correct Score), TTG (Total Goals), NTS (Next Team to Score), CHD (Corner HAD), FHA (First Half HAD), FHL (First Half Hi-Lo), FHH (First Half Handicap), FCS (First Correct Score), OOE (Odd/Even), FTS (First Team to Score), FGS (First Goal Scorer), AGS (Anytime Goal Scorer)
@@ -167,10 +169,33 @@ Note: `POLL_INTERVAL_SECONDS` and `ODDS_TYPES` are no longer global — they are
 - Added reference_data.py with seed data for 18 odds types and 8 tournaments
 - Verified: Sample response parses successfully through models
 
-**Phase 4 (API Client) - NOT STARTED** <-- Start here
-- Implement `HKJCGraphQLClient` in `src/hkjc_scrapper/client.py`
+**Phase 4 (API Client) - COMPLETE**
+- Implemented `HKJCGraphQLClient` with GraphQL query templates
+- Browser simulation headers (User-Agent, Referer, CORS headers)
+- Methods: send_options_preflight(), send_basic_match_list_request(), send_detailed_match_list_request(), fetch_matches_for_odds()
+- Error handling with timeouts and retries
+- Rate limiting with configurable delays
+- **CRITICAL FIX**: HKJC API uses query whitelisting - GraphQL query structure must exactly match approved format from real API. Updated to use whitelisted `matchList` query with all parameters defined (even if unused/null). See `resources/single-match-req-1.txt` for reference query.
 
-**Phases 5-10** - See `docs/project_plan.md` for full details and verification steps for each phase.
+**Phase 5 (Response Parser) - COMPLETE**
+- Implemented parse_matches_response() - validates and parses API JSON into Match models
+- Implemented filter_matches_by_rule() - filters by team/tournament/match ID
+- Implemented filter_fopools_by_odds_types() - filters odds pools by type
+- Verified: Sample response parses successfully, filters work correctly
+
+**Testing Infrastructure - COMPLETE**
+- Added pytest and pytest-mock as dev dependencies
+- Created pytest.ini with integration test marker
+- Unit tests for parser (12 tests, all passing)
+- Unit tests for models (10 tests, all passing)
+- Integration tests for client (4 tests, all passing with live API)
+- Test fixtures using sample JSON response
+- Real API samples in `resources/` directory for reference
+
+**Phase 6 (MongoDB Storage) - NOT STARTED** <-- Start here
+- Implement `MongoDBClient` in `src/hkjc_scrapper/db.py`
+
+**Phases 7-10** - See `docs/project_plan.md` for full details and verification steps for each phase.
 
 ## Coding Conventions
 
@@ -180,7 +205,7 @@ Note: `POLL_INTERVAL_SECONDS` and `ODDS_TYPES` are no longer global — they are
 - **Entry point**: `uv run python -m hkjc_scrapper.main` (the `__main__` pattern)
 - **No over-engineering**: Keep it simple. Only implement what's needed for the current phase.
 - **Error handling**: Log and continue on transient API failures; don't crash the polling loop.
-- **Fields**: Use snake_case for Python attributes. The API uses camelCase - handle mapping in Pydantic models via aliases or field renaming.
+- **Fields**: Use snake_case for Python attributes. The HKJC API also uses snake_case (name_en, name_ch), so no aliases needed for most fields. Some fields use camelCase (frontEndId, kickOffTime) - these are used as-is in both API and models.
 
 ## Session Notes
 
@@ -195,3 +220,6 @@ Note: `POLL_INTERVAL_SECONDS` and `ODDS_TYPES` are no longer global — they are
 - **MongoDB 8.2 installed locally**: Development uses local MongoDB 8.2. Design must support migration to cloud-hosted MongoDB (e.g. Atlas) later — connection string is already configurable via `MONGODB_URI` env var. Data migration will be needed when moving to cloud.
 - **Docs structure**: `docs/project_modules_high_level.md` = high-level 4-module roadmap. `docs/project_plan.md` = detailed Module I implementation phases with verification steps.
 - **Reference data system**: User requested enums/lookups for odds types and tournaments. Implemented as: (1) Python Enums in models.py for validation, (2) Pydantic reference models (OddsTypeReference, TournamentReference), (3) Seed data in reference_data.py with 18 odds types and 8 tournaments. Will be stored in MongoDB `odds_types_ref` and `tournaments_ref` collections for querying from dashboards/analytics.
+- **HKJC API Query Whitelisting Discovery**: Integration tests initially failed with "query isn't whitelisted" error. Discovered HKJC API doesn't accept arbitrary GraphQL queries - only specific pre-approved query structures. Solution: Use exact query format from real API request (see `resources/single-match-req-1.txt`), including ALL parameters defined in query signature even if passed as null/unused. The whitelisted query has ~13 parameters (startIndex, endIndex, startDate, endDate, matchIds, tournIds, fbOddsTypes, fbOddsTypesM, inplayOnly, featuredMatchesOnly, frontEndIds, earlySettlementOnly, showAllMatch). All client methods now use this single whitelisted query format.
+- **API Field Naming**: Initially assumed HKJC API used camelCase (nameEn, nameCh). Real API uses snake_case (name_en, name_ch) for most fields. Some fields like frontEndId, kickOffTime use camelCase. Models updated accordingly. Added new models: Venue, LiveEvent, NgsInfo, AgsInfo, Remark, AdminOperation to handle all fields in real API response.
+- **Real API Samples**: User provided actual API request/response samples in `resources/` directory (`single-match-req-1.txt`, `single-match-res-1.json`). These are the authoritative reference for query structure and response format. Integration tests now successfully fetch live data from HKJC API (tested with 81 matches).
