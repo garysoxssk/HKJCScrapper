@@ -1,8 +1,10 @@
-# HKJCScrapper - Project Plan
+# HKJCScrapper - Project Plan (Module I)
 
 ## Overview
 
-A Python bot that periodically fetches football match odds data from the HKJC GraphQL API, transforms it into structured objects, and stores it in MongoDB. Supports both "current state" lookups and historical odds tracking.
+A Python bot that fetches football match odds data from the HKJC GraphQL API based on configurable **watch rules**, transforms it into structured objects, and stores it in MongoDB. Supports both "current state" lookups and historical odds tracking.
+
+The bot uses a **rule-based scheduler**: instead of blindly polling everything, it discovers matches that match your rules (by team, tournament, etc.) and fetches specific odds types at configured times (before kickoff, at halftime, continuously during match, etc.).
 
 ---
 
@@ -13,71 +15,43 @@ A Python bot that periodically fetches football match odds data from the HKJC Gr
 | Language           | Python 3.11+                    |
 | Package Manager    | uv                              |
 | HTTP Client        | requests (with Session)         |
-| Database           | MongoDB (pymongo / motor)       |
+| Database           | MongoDB (pymongo)               |
+| Data Models        | Pydantic v2                     |
 | Configuration      | pydantic-settings + `.env` file |
-| Scheduling         | APScheduler (or simple loop)    |
+| Scheduling         | APScheduler                     |
+| Build System       | hatchling                       |
 | Logging            | Python built-in `logging`       |
 
 ---
 
-## Phase 1 - Project Scaffolding
+## Phase 1 - Project Scaffolding [COMPLETE]
 
-- [ ] Initialize `uv` project with `pyproject.toml`
-- [ ] Create project directory structure:
-  ```
-  HKJCScrapper/
-  ├── src/
-  │   └── hkjc_scrapper/
-  │       ├── __init__.py
-  │       ├── config.py          # Settings & env vars
-  │       ├── client.py          # HKJC GraphQL API client
-  │       ├── models.py          # Pydantic data models
-  │       ├── db.py              # MongoDB connection & operations
-  │       ├── parser.py          # API response -> model transformation
-  │       ├── scheduler.py       # Polling scheduler
-  │       └── main.py            # Entry point
-  ├── tests/
-  │   ├── __init__.py
-  │   ├── test_client.py
-  │   ├── test_parser.py
-  │   └── test_db.py
-  ├── docs/
-  │   └── (existing guide + sample response)
-  ├── .env.example
-  ├── pyproject.toml
-  └── README.md
-  ```
-- [ ] Add core dependencies: `requests`, `pymongo`, `pydantic`, `pydantic-settings`, `apscheduler`
-- [ ] Create `.env.example` with placeholder config values
+- [x] Initialize `uv` project with `pyproject.toml`
+- [x] Create project directory structure (src layout)
+- [x] Add core dependencies: `requests`, `pymongo`, `pydantic`, `pydantic-settings`, `apscheduler`
+- [x] Create `.env.example` with placeholder config values
+- [x] Create `.gitignore`
 
 ### Verification
 ```bash
-# 1. Check uv project is valid
 uv run python -c "print('project ok')"
-
-# 2. Check all dependencies can be imported
 uv run python -c "import requests; import pymongo; import pydantic; import pydantic_settings; import apscheduler; print('all imports ok')"
-
-# 3. Check directory structure exists
 find src/hkjc_scrapper -name "*.py" | sort
-# Should list all module files
-
-# 4. Check .env.example exists
-cat .env.example
 ```
 
 ---
 
 ## Phase 2 - Configuration (`config.py`)
 
-- [ ] Define settings class using `pydantic-settings`:
+- [ ] Define `Settings` class using `pydantic-settings`:
   - `MONGODB_URI` (default: `mongodb://localhost:27017`)
   - `MONGODB_DATABASE` (default: `hkjc`)
   - `GRAPHQL_ENDPOINT` (default: `https://info.cld.hkjc.com/graphql/base/`)
-  - `POLL_INTERVAL_SECONDS` (default: `300` i.e. 5 min)
-  - `ODDS_TYPES` (list, default: `["HAD", "HHA", "HDC", "HIL"]`, configurable)
+  - `DISCOVERY_INTERVAL_SECONDS` (default: `900` i.e. 15 min — how often the discovery job runs)
   - `START_INDEX` / `END_INDEX` for pagination (default: 1 / 60)
   - `LOG_LEVEL` (default: `INFO`)
+
+Note: `POLL_INTERVAL_SECONDS` and `ODDS_TYPES` are no longer global settings — they are now per-rule in watch rules.
 
 ### Verification
 ```bash
@@ -87,17 +61,15 @@ from hkjc_scrapper.config import Settings
 s = Settings()
 print(f'MongoDB URI: {s.MONGODB_URI}')
 print(f'Endpoint:    {s.GRAPHQL_ENDPOINT}')
-print(f'Odds types:  {s.ODDS_TYPES}')
-print(f'Poll interval: {s.POLL_INTERVAL_SECONDS}s')
+print(f'Discovery interval: {s.DISCOVERY_INTERVAL_SECONDS}s')
 "
 
 # 2. Load config with overridden env vars
-MONGODB_URI="mongodb://custom:27017" ODDS_TYPES='["HAD","CRS"]' \
+MONGODB_URI='mongodb://custom:27017' \
 uv run python -c "
 from hkjc_scrapper.config import Settings
 s = Settings()
 assert s.MONGODB_URI == 'mongodb://custom:27017'
-assert s.ODDS_TYPES == ['HAD', 'CRS']
 print('env override ok')
 "
 ```
@@ -106,7 +78,7 @@ print('env override ok')
 
 ## Phase 3 - Pydantic Data Models (`models.py`)
 
-Define structured models that mirror the API response, making them easy to validate, serialize, and store.
+Define structured models that mirror the API response.
 
 - [ ] `Team` - id, name_en, name_ch
 - [ ] `Tournament` - id, frontEndId, code, name_en, name_ch
@@ -115,9 +87,13 @@ Define structured models that mirror the API response, making them easy to valid
 - [ ] `Combination` - combId, str, status, offerEarlySettlement, currentOdds, selections
 - [ ] `Line` - lineId, status, condition, main, combinations
 - [ ] `FoPool` (Fixed Odds Pool) - id, status, oddsType, instNo, inplay, name_ch, name_en, updateAt, expectedSuspendDateTime, lines
-- [ ] `PoolInfo` - normalPools, inplayPools, sellingPools, definedPools, ntsInfo, agsInfo (list of player objects)
+- [ ] `PoolInfo` - normalPools, inplayPools, sellingPools, definedPools, ntsInfo, agsInfo
 - [ ] `TvChannel` - code, name_en, name_ch
 - [ ] `Match` - id, frontEndId, matchDate, kickOffTime, status, updateAt, esIndicatorEnabled, homeTeam, awayTeam, tournament, venue, tvChannels, poolInfo, runningResult, foPools, etc.
+- [ ] `WatchRule` - name, enabled, match_filter, observations (for watch rules — see Phase 6a)
+- [ ] `MatchFilter` - teams, tournaments, match_ids
+- [ ] `Observation` - odds_types, schedule
+- [ ] `Schedule` - mode (event/continuous), triggers, interval_seconds, start_event, end_event
 
 ### Verification
 ```bash
@@ -154,7 +130,7 @@ for m in matches[:3]:
   - `send_options_preflight()` - send OPTIONS request for CORS
   - `send_basic_match_list_request()` - fetch match list without odds
   - `send_detailed_match_list_request(odds_types, start_index, end_index)` - fetch matches with configurable odds types
-  - `simulate_browser_behavior()` - replicate the browser request sequence (OPTIONS -> basic -> OPTIONS -> detailed -> basic)
+  - `fetch_matches_for_odds(odds_types)` - full sequence (preflight + query) for specific odds types
 - [ ] Add error handling: retries, timeouts, HTTP status checks, JSON parse errors
 - [ ] Add rate limiting / delay between requests to avoid being blocked
 
@@ -166,7 +142,7 @@ from hkjc_scrapper.client import HKJCGraphQLClient
 from hkjc_scrapper.config import Settings
 
 client = HKJCGraphQLClient(Settings())
-response = client.fetch_matches()
+response = client.fetch_matches_for_odds(['HAD', 'HHA'])
 matches = response['data']['matches']
 print(f'Fetched {len(matches)} matches from HKJC API')
 for m in matches[:3]:
@@ -180,24 +156,25 @@ for m in matches[:3]:
 
 - [ ] `parse_matches_response(raw_json: dict) -> list[Match]`
   - Validate and extract `data.matches` from raw API response
-  - Convert each match dict into a `Match` pydantic model
   - Handle missing/null fields gracefully (e.g. `venue: null`, `runningResultExtra: null`)
-- [ ] `filter_by_odds_types(matches: list[Match], odds_types: list[str]) -> list[Match]`
-  - Filter each match's `foPools` to only keep the configured odds types
+- [ ] `filter_matches_by_rule(matches: list[Match], rule: WatchRule) -> list[Match]`
+  - Filter matches by team names, tournament codes, or specific match IDs
+- [ ] `filter_fopools_by_odds_types(matches: list[Match], odds_types: list[str]) -> list[Match]`
+  - Filter each match's `foPools` to only keep the requested odds types
 
 ### Verification
 ```bash
 # End-to-end: fetch live data -> parse into models -> print structured output
 uv run python -c "
 from hkjc_scrapper.client import HKJCGraphQLClient
-from hkjc_scrapper.parser import parse_matches_response, filter_by_odds_types
+from hkjc_scrapper.parser import parse_matches_response, filter_fopools_by_odds_types
 from hkjc_scrapper.config import Settings
 
 settings = Settings()
 client = HKJCGraphQLClient(settings)
-raw = client.fetch_matches()
+raw = client.fetch_matches_for_odds(['HAD', 'HHA', 'CHL'])
 matches = parse_matches_response(raw)
-matches = filter_by_odds_types(matches, settings.ODDS_TYPES)
+matches = filter_fopools_by_odds_types(matches, ['HAD', 'HHA', 'CHL'])
 print(f'Parsed {len(matches)} matches')
 for m in matches[:2]:
     print(f'\n{m.frontEndId}: {m.homeTeam.name_en} vs {m.awayTeam.name_en}')
@@ -217,49 +194,101 @@ for m in matches[:2]:
 ### Collections Design
 
 **`matches_current`** - Latest state of each match (upserted on each poll)
-```
+```json
 {
-  _id: <match.id>,
-  frontEndId: "FB4342",
-  matchDate: ISODate,
-  kickOffTime: ISODate,
-  status: "SECONDHALF",
-  homeTeam: { id, name_en, name_ch },
-  awayTeam: { id, name_en, name_ch },
-  tournament: { id, code, name_en, name_ch },
-  runningResult: { homeScore, awayScore, corner, homeCorner, awayCorner },
-  poolInfo: { normalPools: [...], inplayPools: [...], ... },
-  foPools: [ ... full odds data ... ],
-  updatedAt: ISODate (API's updateAt),
-  fetchedAt: ISODate (when we fetched it)
+  "_id": "<match.id>",
+  "frontEndId": "FB4342",
+  "matchDate": "ISODate",
+  "kickOffTime": "ISODate",
+  "status": "SECONDHALF",
+  "homeTeam": { "id": "...", "name_en": "...", "name_ch": "..." },
+  "awayTeam": { "id": "...", "name_en": "...", "name_ch": "..." },
+  "tournament": { "id": "...", "code": "MLS", "name_en": "...", "name_ch": "..." },
+  "runningResult": { "homeScore": 2, "awayScore": 1, "corner": 5 },
+  "foPools": [ "..." ],
+  "updatedAt": "ISODate (API's updateAt)",
+  "fetchedAt": "ISODate (when we fetched it)"
 }
 ```
 
-**`odds_history`** - Append-only snapshots for odds change tracking
-```
+**`odds_history`** - Append-only time-series collection for odds change tracking
+```json
 {
-  _id: ObjectId,
-  matchId: "50062906",
-  matchDescription: "San Diego FC vs CF Montreal",
-  oddsType: "HHA",
-  inplay: true,
-  lines: [ ... snapshot of all lines/combinations at this point ... ],
-  fetchedAt: ISODate
+  "_id": "ObjectId",
+  "matchId": "50062906",
+  "matchDescription": "San Diego FC vs CF Montreal",
+  "oddsType": "HHA",
+  "inplay": true,
+  "lines": [ "...snapshot of all lines/combinations..." ],
+  "fetchedAt": "ISODate"
 }
 ```
+Created as a MongoDB time-series collection with `timeField: "fetchedAt"`, `metaField: "matchId"`.
+
+**`watch_rules`** - Configurable rules for what to observe
+```json
+{
+  "_id": "ObjectId",
+  "name": "Man Utd EPL",
+  "enabled": true,
+  "match_filter": {
+    "teams": ["Manchester United"],
+    "tournaments": ["EPL"],
+    "match_ids": []
+  },
+  "observations": [
+    {
+      "odds_types": ["HAD", "HHA", "HDC"],
+      "schedule": {
+        "mode": "event",
+        "triggers": [
+          { "event": "before_kickoff", "minutes": 30 }
+        ]
+      }
+    },
+    {
+      "odds_types": ["CHL"],
+      "schedule": {
+        "mode": "continuous",
+        "interval_seconds": 300,
+        "start_event": "kickoff",
+        "end_event": "fulltime"
+      }
+    }
+  ]
+}
+```
+
+### Schedule trigger types
+
+| Trigger | Meaning | Example |
+|---------|---------|---------|
+| `before_kickoff` | N minutes before scheduled kickoff | `{"event": "before_kickoff", "minutes": 30}` |
+| `at_kickoff` | At kickoff time | `{"event": "at_kickoff"}` |
+| `at_halftime` | Kickoff + 45 minutes | `{"event": "at_halftime"}` |
+| `after_kickoff` | N minutes after kickoff | `{"event": "after_kickoff", "minutes": 60}` |
+| `continuous` | Repeating interval in a time window | `{"mode": "continuous", "interval_seconds": 300, "start_event": "kickoff", "end_event": "fulltime"}` |
 
 ### Implementation
 
 - [ ] `MongoDBClient` class:
   - `__init__(uri, database)` - connect to MongoDB
+  - `ensure_collections()` - create time-series collection for `odds_history`, indexes
   - `upsert_match(match: Match)` - insert or update `matches_current`
   - `insert_odds_snapshot(match_id, match_desc, fo_pool)` - append to `odds_history`
   - `save_matches(matches: list[Match])` - batch upsert matches + insert odds snapshots
   - `get_match(match_id)` - retrieve current state
   - `get_odds_history(match_id, odds_type, time_range)` - query historical odds
+  - **Watch rules CRUD**:
+    - `add_watch_rule(rule: WatchRule)`
+    - `get_active_watch_rules() -> list[WatchRule]`
+    - `update_watch_rule(name, updates)`
+    - `disable_watch_rule(name)`
+    - `delete_watch_rule(name)`
 - [ ] Create indexes:
   - `matches_current`: index on `status`, `tournament.code`, `matchDate`
   - `odds_history`: compound index on `(matchId, oddsType, fetchedAt)`
+  - `watch_rules`: unique index on `name`
 
 ### Verification
 ```bash
@@ -297,24 +326,103 @@ print(f'Odds history records: {history_count}')
 
 ---
 
-## Phase 7 - Scheduler (`scheduler.py`)
+## Phase 6a - Watch Rules CLI (`cli.py`)
 
-- [ ] Implement polling loop using APScheduler or `asyncio` loop:
-  - On each tick:
-    1. Call `client.send_detailed_match_list_request()`
-    2. Parse response into `Match` models
-    3. Save to MongoDB (upsert current + append history)
-    4. Log summary: number of matches fetched, any errors
-  - Configurable interval via `POLL_INTERVAL_SECONDS`
-- [ ] Graceful shutdown handling (SIGINT/SIGTERM)
-- [ ] Error recovery: log and continue on transient failures, don't crash the loop
+- [ ] CLI tool for managing watch rules in MongoDB:
+  - `add-rule` - add a new watch rule
+  - `list-rules` - list all rules (with enabled/disabled status)
+  - `enable-rule` / `disable-rule` - toggle a rule
+  - `delete-rule` - remove a rule
+  - `show-rule` - display full rule details
+
+### Example usage
+```bash
+# Add a rule: observe Man Utd EPL matches, HAD before kickoff, CHL continuously
+uv run python -m hkjc_scrapper.cli add-rule \
+  --name "Man Utd EPL" \
+  --teams "Manchester United" \
+  --tournaments "EPL" \
+  --observation "HAD,HHA,HDC:event:before_kickoff:30" \
+  --observation "CHL:continuous:300:kickoff:fulltime"
+
+# Add a rule: all La Liga corner odds, continuous during match
+uv run python -m hkjc_scrapper.cli add-rule \
+  --name "La Liga Corners" \
+  --tournaments "LLG" \
+  --observation "CHL:event:before_kickoff:30" \
+  --observation "CHL:event:at_halftime"
+
+# List all rules
+uv run python -m hkjc_scrapper.cli list-rules
+
+# Disable a rule
+uv run python -m hkjc_scrapper.cli disable-rule --name "La Liga Corners"
+```
 
 ### Verification
 ```bash
-# Start scheduler, let it run for 2 poll cycles, then Ctrl+C
+# Add a test rule, list it, disable it, verify
+uv run python -m hkjc_scrapper.cli add-rule \
+  --name "Test Rule" \
+  --tournaments "EPL" \
+  --observation "HAD:event:before_kickoff:30"
+uv run python -m hkjc_scrapper.cli list-rules
+uv run python -m hkjc_scrapper.cli disable-rule --name "Test Rule"
+uv run python -m hkjc_scrapper.cli list-rules
+# Should show "Test Rule" as disabled
+uv run python -m hkjc_scrapper.cli delete-rule --name "Test Rule"
+```
+
+---
+
+## Phase 7 - Rule-Based Scheduler (`scheduler.py`)
+
+The scheduler has **two layers**:
+
+### Layer 1: Discovery Job (periodic)
+Runs every `DISCOVERY_INTERVAL_SECONDS` (default 15 min):
+1. Fetch basic match list from HKJC (no odds — lightweight)
+2. Load all enabled watch rules from MongoDB
+3. Match each rule's filters against available matches
+4. For each matched (match, observation), calculate absolute fetch times based on the schedule triggers and the match's `kickOffTime`
+5. Schedule/update APScheduler jobs for each calculated fetch time
+
+### Layer 2: Fetch Jobs (scheduled at computed times)
+- **Event mode**: One-shot APScheduler `date` trigger at the computed time
+  - e.g., "fetch HAD for match FB4342 at 2026-02-22T19:30 (30 min before kickoff)"
+- **Continuous mode**: APScheduler `interval` trigger between start and end times
+  - e.g., "fetch CHL for match FB4342 every 300s from kickoff until fulltime"
+
+### Implementation
+- [ ] `MatchScheduler` class:
+  - `__init__(client, db, settings)` - initialize with dependencies
+  - `start()` - start the discovery job loop
+  - `stop()` - graceful shutdown
+  - `run_discovery()` - Layer 1 logic
+  - `evaluate_rules(matches, rules)` - match rules against available matches, return scheduled fetch tasks
+  - `schedule_fetch(match, odds_types, trigger_time)` - schedule a one-shot or interval fetch job
+  - `execute_fetch(match_id, odds_types)` - Layer 2: actually call API, parse, save
+- [ ] Deduplication: avoid scheduling duplicate jobs for the same (match, oddsType, time)
+- [ ] Graceful shutdown handling (SIGINT/SIGTERM)
+- [ ] Error recovery: log and continue on transient failures
+
+### Verification
+```bash
+# 1. Add a watch rule first
+uv run python -m hkjc_scrapper.cli add-rule \
+  --name "All EPL" --tournaments "EPL" \
+  --observation "HAD,HHA:event:before_kickoff:30"
+
+# 2. Start the scheduler — it should discover matches and schedule fetches
 uv run python -m hkjc_scrapper.main
-# Expected: logs showing periodic fetch, parse, save cycle
-# Then Ctrl+C should show "Shutting down gracefully..."
+# Expected log output:
+#   [Discovery] Found 45 matches from HKJC
+#   [Discovery] Rule "All EPL" matched 8 matches
+#   [Scheduler] Scheduled HAD,HHA fetch for FB4342 at 2026-02-22T19:30
+#   [Scheduler] Scheduled HAD,HHA fetch for FB4343 at 2026-02-22T20:00
+#   ...
+
+# 3. Ctrl+C should show "Shutting down gracefully..."
 ```
 
 ---
@@ -324,22 +432,22 @@ uv run python -m hkjc_scrapper.main
 - [ ] CLI entry point that:
   - Loads config from `.env`
   - Initializes the API client, DB client, and scheduler
-  - Supports `--once` flag for single fetch (useful for testing/cron)
-  - Default mode: starts the scheduled polling service
-  - Logs startup info (config summary, DB connection status)
+  - Supports `--once` flag for single fetch of all rule-matched matches (useful for testing)
+  - Default mode: starts the discovery + scheduler loop
+  - Logs startup info (config summary, DB connection status, active rule count)
 
 ### Verification
 ```bash
-# 1. Single-fetch mode (no MongoDB needed to verify the fetch+parse)
+# 1. Single-fetch mode
 uv run python -m hkjc_scrapper.main --once
-# Expected: fetches data, saves to DB, prints summary, exits
+# Expected: discovers matches, evaluates rules, fetches matching odds, saves, exits
 
 # 2. Service mode (requires MongoDB)
 uv run python -m hkjc_scrapper.main
-# Expected: starts polling loop, logs each cycle
+# Expected: starts discovery loop, schedules fetches, runs them on time
 # Ctrl+C to stop
 
-# MILESTONE 2: Full pipeline running end-to-end
+# MILESTONE 2: Full rule-based pipeline running end-to-end
 ```
 
 ---
@@ -347,9 +455,11 @@ uv run python -m hkjc_scrapper.main
 ## Phase 9 - Testing
 
 - [ ] Unit tests for `parser.py` using the sample response JSON as fixture
-- [ ] Unit tests for `models.py` (validation, edge cases)
+- [ ] Unit tests for `models.py` (validation, edge cases, WatchRule model)
+- [ ] Unit tests for scheduler rule evaluation (given rules + matches, verify correct schedule)
 - [ ] Integration test for `client.py` (mock HTTP responses)
 - [ ] Integration test for `db.py` (use mongomock or test DB)
+- [ ] Integration test for `cli.py` (add/list/disable/delete rules)
 
 ### Verification
 ```bash
@@ -363,8 +473,7 @@ uv run pytest tests/ -v
 
 - [ ] Add `Dockerfile` for containerized deployment
 - [ ] Add `docker-compose.yml` with MongoDB + scrapper services
-- [ ] Add `.gitignore` (venv, .env, __pycache__, etc.)
-- [ ] Verify end-to-end: start service -> fetch data -> verify in MongoDB
+- [ ] Verify end-to-end: start service -> rules evaluated -> data fetched on schedule -> verify in MongoDB
 
 ### Verification
 ```bash
@@ -373,22 +482,51 @@ docker-compose up --build -d
 
 # 2. Check both containers are running
 docker-compose ps
-# Expected: both 'mongo' and 'scrapper' services are up
 
 # 3. Check logs
 docker-compose logs -f scrapper
-# Expected: polling loop running, data being saved
+# Expected: discovery loop running, fetch jobs executing on schedule
 
 # 4. Verify data in MongoDB
 docker-compose exec mongo mongosh hkjc --eval "
   print('matches_current:', db.matches_current.countDocuments({}));
   print('odds_history:', db.odds_history.countDocuments({}));
+  print('watch_rules:', db.watch_rules.countDocuments({}));
 "
 ```
 
 ---
 
-## Key API Reference (from sample response)
+## Project Structure (updated)
+
+```
+HKJCScrapper/
+├── src/hkjc_scrapper/
+│   ├── __init__.py
+│   ├── config.py            # Settings via pydantic-settings + .env
+│   ├── client.py            # HKJC GraphQL API client (requests.Session)
+│   ├── models.py            # Pydantic models (API response + WatchRule)
+│   ├── parser.py            # Raw JSON -> Pydantic model transformation
+│   ├── db.py                # MongoDB connection & CRUD (matches, odds, rules)
+│   ├── cli.py               # CLI for managing watch rules
+│   ├── scheduler.py         # Rule-based scheduler (discovery + fetch jobs)
+│   └── main.py              # Entry point (--once or service mode)
+├── tests/
+├── docs/
+│   ├── project_tracker.md   # High-level 4-module roadmap
+│   ├── project_plan.md      # This file
+│   ├── hkjc_api_guide.txt   # Full API guide (Chinese)
+│   └── api/
+│       └── base_api_sample_response.json
+├── .env.example
+├── .gitignore
+├── pyproject.toml
+└── CLAUDE.md
+```
+
+---
+
+## Key API Reference
 
 ### Match Status Values
 - `SCHEDULED` - Not started
@@ -397,7 +535,7 @@ docker-compose exec mongo mongosh hkjc --eval "
 - `HALFTIME` - Half time break
 - `FULLTIME` - Match ended
 
-### Odds Types (configurable)
+### Odds Types (configurable per watch rule)
 | Code  | Name               |
 | ----- | ------------------ |
 | HAD   | Home/Away/Draw     |
@@ -419,6 +557,18 @@ docker-compose exec mongo mongosh hkjc --eval "
 | FGS   | First Goal Scorer  |
 | AGS   | Anytime Goal Scorer|
 
+### HKJC Tournament Codes (common)
+| Code  | League                    |
+| ----- | ------------------------- |
+| EPL   | English Premier League    |
+| LLG   | Spanish La Liga           |
+| ITA   | Italian Serie A           |
+| BUN   | German Bundesliga         |
+| FRA   | French Ligue 1            |
+| UCL   | UEFA Champions League     |
+| UEL   | UEFA Europa League        |
+| MLS   | US Major League           |
+
 ### Pool/Line Status Values
 - `SELLINGSTARTED` - Pool is open for bets
 - `SUSPENDED` - Temporarily suspended
@@ -431,8 +581,10 @@ docker-compose exec mongo mongosh hkjc --eval "
 
 ---
 
-## Suggested Implementation Order
+## Milestones
 
-Start from Phase 1 and work through sequentially. Phases 2-5 can be partially parallelized (config + models first, then client + parser). Phase 6 (DB) depends on models being ready. Phase 7-8 tie everything together.
-
-The first milestone is **Phase 5 complete**: you can run the client, fetch real data, parse it into typed models, and print structured output. The second milestone is **Phase 8 complete**: data is flowing into MongoDB on a schedule.
+| Milestone | Phase | What you can do |
+|-----------|-------|-----------------|
+| **M1** | Phase 5 | Fetch live data, parse into typed models, print structured output |
+| **M2** | Phase 8 | Full rule-based pipeline: rules -> discovery -> scheduled fetches -> MongoDB |
+| **M3** | Phase 10 | Dockerized deployment with MongoDB |
