@@ -154,10 +154,23 @@ Note: `POLL_INTERVAL_SECONDS` and `ODDS_TYPES` are no longer global — they are
 - .env.example and .gitignore created
 - Verified: `uv run python -c "import requests; import pymongo; ..."` passes
 
-**Phase 2 (Configuration) - NOT STARTED** <-- Start here
-- Implement `Settings` class in `src/hkjc_scrapper/config.py`
+**Phase 2 (Configuration) - COMPLETE**
+- Implemented `Settings` class with pydantic-settings
+- Loads from .env or defaults (MONGODB_URI, GRAPHQL_ENDPOINT, DISCOVERY_INTERVAL_SECONDS, etc.)
+- Verified: environment variable override works
 
-**Phases 3-10** - See `docs/project_plan.md` for full details and verification steps for each phase.
+**Phase 3 (Pydantic Models) - COMPLETE**
+- Created all API response models (Team, Tournament, Match, FoPool, Line, Combination, etc.)
+- Created watch rule models (WatchRule, MatchFilter, Observation, Schedule)
+- Added enums (OddsType, TournamentCode, MatchStatus, PoolStatus, CombinationStatus)
+- Created reference data models (OddsTypeReference, TournamentReference)
+- Added reference_data.py with seed data for 18 odds types and 8 tournaments
+- Verified: Sample response parses successfully through models
+
+**Phase 4 (API Client) - NOT STARTED** <-- Start here
+- Implement `HKJCGraphQLClient` in `src/hkjc_scrapper/client.py`
+
+**Phases 5-10** - See `docs/project_plan.md` for full details and verification steps for each phase.
 
 ## Coding Conventions
 
@@ -181,3 +194,4 @@ Note: `POLL_INTERVAL_SECONDS` and `ODDS_TYPES` are no longer global — they are
 - **Scheduler redesign**: Two-layer architecture. Layer 1 (Discovery) runs periodically to find matches matching rules. Layer 2 (Fetch jobs) are scheduled at computed times using APScheduler date/interval triggers.
 - **MongoDB 8.2 installed locally**: Development uses local MongoDB 8.2. Design must support migration to cloud-hosted MongoDB (e.g. Atlas) later — connection string is already configurable via `MONGODB_URI` env var. Data migration will be needed when moving to cloud.
 - **Docs structure**: `docs/project_modules_high_level.md` = high-level 4-module roadmap. `docs/project_plan.md` = detailed Module I implementation phases with verification steps.
+- **Reference data system**: User requested enums/lookups for odds types and tournaments. Implemented as: (1) Python Enums in models.py for validation, (2) Pydantic reference models (OddsTypeReference, TournamentReference), (3) Seed data in reference_data.py with 18 odds types and 8 tournaments. Will be stored in MongoDB `odds_types_ref` and `tournaments_ref` collections for querying from dashboards/analytics.
