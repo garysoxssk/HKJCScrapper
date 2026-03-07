@@ -1,8 +1,29 @@
 """Unit tests for cli.py using mongomock (no real MongoDB required)."""
 
+from unittest.mock import MagicMock
+
 import pytest
 
-from hkjc_scrapper.cli import parse_observation, cmd_add_rule, cmd_list_rules, cmd_show_rule, cmd_enable_rule, cmd_disable_rule, cmd_delete_rule
+from hkjc_scrapper.cli import (
+    cmd_add_rule,
+    cmd_delete_rule,
+    cmd_disable_rule,
+    cmd_enable_rule,
+    cmd_fetch_match,
+    cmd_list_matches,
+    cmd_list_rules,
+    cmd_show_rule,
+    parse_observation,
+)
+from hkjc_scrapper.models import (
+    Combination,
+    FoPool,
+    Line,
+    Match,
+    Selection,
+    Team,
+    Tournament,
+)
 
 
 # ============================================================================
@@ -256,4 +277,256 @@ class TestCmdEnableDisableDelete:
         """Test deleting a non-existent rule."""
         args = _FakeArgs(name="nonexistent")
         result = cmd_delete_rule(args, mock_db)
+        assert result == 1
+
+
+# ============================================================================
+# list-matches / fetch-match tests
+# ============================================================================
+
+def _make_api_response(matches_data: list[dict]) -> dict:
+    """Wrap match dicts in the API response envelope."""
+    return {"data": {"matches": matches_data}}
+
+
+def _sample_match_dict(
+    match_id="50001111",
+    front_end_id="FB9999",
+    tournament_code="EPL",
+    home="Team A",
+    away="Team B",
+    status="SCHEDULED",
+):
+    """Create a raw match dict as the API would return."""
+    return {
+        "id": match_id,
+        "frontEndId": front_end_id,
+        "matchDate": "2026-03-10+08:00",
+        "kickOffTime": "2026-03-10T20:00:00.000+08:00",
+        "status": status,
+        "updateAt": "2026-03-10T10:00:00.000+08:00",
+        "homeTeam": {"id": "T1", "name_en": home, "name_ch": "A隊"},
+        "awayTeam": {"id": "T2", "name_en": away, "name_ch": "B隊"},
+        "tournament": {
+            "id": "TN1",
+            "code": tournament_code,
+            "name_en": f"League {tournament_code}",
+            "name_ch": "聯賽",
+        },
+        "foPools": [],
+    }
+
+
+def _sample_match_dict_with_odds(match_id="50001111", front_end_id="FB9999"):
+    """Create a raw match dict with HAD odds."""
+    d = _sample_match_dict(match_id=match_id, front_end_id=front_end_id)
+    d["foPools"] = [
+        {
+            "id": "P001",
+            "status": "SELLINGSTARTED",
+            "oddsType": "HAD",
+            "instNo": 0,
+            "inplay": False,
+            "name_ch": "",
+            "name_en": "",
+            "updateAt": "2026-03-10T10:00:00.000+08:00",
+            "expectedSuspendDateTime": "",
+            "lines": [
+                {
+                    "lineId": "L001",
+                    "status": "SELLINGSTARTED",
+                    "condition": None,
+                    "main": True,
+                    "combinations": [
+                        {
+                            "combId": "C1",
+                            "str": "H",
+                            "status": "AVAILABLE",
+                            "offerEarlySettlement": "N",
+                            "currentOdds": "2.50",
+                            "selections": [
+                                {"selId": "S1", "str": "H", "name_en": "Home", "name_ch": "主"}
+                            ],
+                        },
+                        {
+                            "combId": "C2",
+                            "str": "D",
+                            "status": "AVAILABLE",
+                            "offerEarlySettlement": "N",
+                            "currentOdds": "3.20",
+                            "selections": [
+                                {"selId": "S2", "str": "D", "name_en": "Draw", "name_ch": "和"}
+                            ],
+                        },
+                        {
+                            "combId": "C3",
+                            "str": "A",
+                            "status": "AVAILABLE",
+                            "offerEarlySettlement": "N",
+                            "currentOdds": "2.80",
+                            "selections": [
+                                {"selId": "S3", "str": "A", "name_en": "Away", "name_ch": "客"}
+                            ],
+                        },
+                    ],
+                }
+            ],
+        }
+    ]
+    return d
+
+
+class TestCmdListMatches:
+    """Tests for list-matches command."""
+
+    def test_list_matches_success(self, mock_db, capsys):
+        """Test listing matches from a mocked API response."""
+        mock_client = MagicMock()
+        mock_client.send_basic_match_list_request.return_value = _make_api_response([
+            _sample_match_dict("M1", "FB001", "EPL", "Liverpool", "Arsenal"),
+            _sample_match_dict("M2", "FB002", "SFL", "Barcelona", "Real Madrid", "FIRSTHALF"),
+        ])
+
+        args = _FakeArgs(tournament="", status="", team="")
+        result = cmd_list_matches(args, mock_db, mock_client)
+        assert result == 0
+
+        output = capsys.readouterr().out
+        assert "Liverpool" in output
+        assert "Barcelona" in output
+        assert "2 matches displayed" in output
+
+    def test_list_matches_filter_tournament(self, mock_db, capsys):
+        """Test filtering by tournament code."""
+        mock_client = MagicMock()
+        mock_client.send_basic_match_list_request.return_value = _make_api_response([
+            _sample_match_dict("M1", "FB001", "EPL", "Liverpool", "Arsenal"),
+            _sample_match_dict("M2", "FB002", "SFL", "Barcelona", "Real Madrid"),
+        ])
+
+        args = _FakeArgs(tournament="SFL", status="", team="")
+        result = cmd_list_matches(args, mock_db, mock_client)
+        assert result == 0
+
+        output = capsys.readouterr().out
+        assert "Barcelona" in output
+        assert "Liverpool" not in output
+        assert "1 matches displayed" in output
+
+    def test_list_matches_filter_status(self, mock_db, capsys):
+        """Test filtering by match status."""
+        mock_client = MagicMock()
+        mock_client.send_basic_match_list_request.return_value = _make_api_response([
+            _sample_match_dict("M1", "FB001", "EPL", "Liverpool", "Arsenal", "SCHEDULED"),
+            _sample_match_dict("M2", "FB002", "EPL", "Chelsea", "Spurs", "FIRSTHALF"),
+        ])
+
+        args = _FakeArgs(tournament="", status="FIRSTHALF", team="")
+        result = cmd_list_matches(args, mock_db, mock_client)
+        assert result == 0
+
+        output = capsys.readouterr().out
+        assert "Chelsea" in output
+        assert "Liverpool" not in output
+
+    def test_list_matches_filter_team(self, mock_db, capsys):
+        """Test filtering by team name (partial match)."""
+        mock_client = MagicMock()
+        mock_client.send_basic_match_list_request.return_value = _make_api_response([
+            _sample_match_dict("M1", "FB001", "EPL", "Liverpool", "Arsenal"),
+            _sample_match_dict("M2", "FB002", "EPL", "Chelsea", "Spurs"),
+        ])
+
+        args = _FakeArgs(tournament="", status="", team="arsenal")
+        result = cmd_list_matches(args, mock_db, mock_client)
+        assert result == 0
+
+        output = capsys.readouterr().out
+        assert "Arsenal" in output
+        assert "Chelsea" not in output
+
+    def test_list_matches_no_results(self, mock_db, capsys):
+        """Test when no matches are returned."""
+        mock_client = MagicMock()
+        mock_client.send_basic_match_list_request.return_value = _make_api_response([])
+
+        args = _FakeArgs(tournament="", status="", team="")
+        result = cmd_list_matches(args, mock_db, mock_client)
+        assert result == 0
+        assert "No matches found" in capsys.readouterr().out
+
+
+class TestCmdFetchMatch:
+    """Tests for fetch-match command."""
+
+    def test_fetch_by_id_and_save(self, mock_db, capsys):
+        """Test fetching a match by ID and saving to DB."""
+        mock_client = MagicMock()
+        mock_client.fetch_matches_for_odds.return_value = _make_api_response([
+            _sample_match_dict_with_odds("M1", "FB001"),
+        ])
+
+        args = _FakeArgs(id="M1", front_end_id="", odds="HAD", no_save=False)
+        result = cmd_fetch_match(args, mock_db, mock_client)
+        assert result == 0
+
+        output = capsys.readouterr().out
+        assert "FB001" in output
+        assert "HAD" in output
+        assert "H=2.50" in output
+        assert "Saved to DB" in output
+
+    def test_fetch_by_front_end_id(self, mock_db, capsys):
+        """Test fetching a match by front-end ID."""
+        mock_client = MagicMock()
+        mock_client.fetch_matches_for_odds.return_value = _make_api_response([
+            _sample_match_dict_with_odds("M1", "FB001"),
+        ])
+
+        args = _FakeArgs(id="", front_end_id="FB001", odds="HAD", no_save=False)
+        result = cmd_fetch_match(args, mock_db, mock_client)
+        assert result == 0
+
+        output = capsys.readouterr().out
+        assert "FB001" in output
+
+    def test_fetch_no_save(self, mock_db, capsys):
+        """Test --no-save flag shows data without saving."""
+        mock_client = MagicMock()
+        mock_client.fetch_matches_for_odds.return_value = _make_api_response([
+            _sample_match_dict_with_odds("M1", "FB001"),
+        ])
+
+        args = _FakeArgs(id="M1", front_end_id="", odds="HAD", no_save=True)
+        result = cmd_fetch_match(args, mock_db, mock_client)
+        assert result == 0
+
+        output = capsys.readouterr().out
+        assert "--no-save" in output
+        assert "Saved to DB" not in output
+
+    def test_fetch_match_not_found(self, mock_db, capsys):
+        """Test when target match is not in API response."""
+        mock_client = MagicMock()
+        mock_client.fetch_matches_for_odds.return_value = _make_api_response([
+            _sample_match_dict("M99", "FB999"),
+        ])
+
+        args = _FakeArgs(id="M1", front_end_id="", odds="HAD", no_save=False)
+        result = cmd_fetch_match(args, mock_db, mock_client)
+        assert result == 1
+        assert "not found" in capsys.readouterr().out
+
+    def test_fetch_no_id_provided(self, mock_db, capsys):
+        """Test error when neither --id nor --front-end-id is given."""
+        mock_client = MagicMock()
+        args = _FakeArgs(id="", front_end_id="", odds="HAD", no_save=False)
+        result = cmd_fetch_match(args, mock_db, mock_client)
+        assert result == 1
+
+    def test_fetch_no_odds_provided(self, mock_db, capsys):
+        """Test error when --odds is not provided."""
+        mock_client = MagicMock()
+        args = _FakeArgs(id="M1", front_end_id="", odds="", no_save=False)
+        result = cmd_fetch_match(args, mock_db, mock_client)
         assert result == 1

@@ -1,12 +1,19 @@
-"""CLI for managing HKJC watch rules.
+"""CLI for managing HKJC watch rules and ad-hoc data retrieval.
 
 Usage:
+    # Watch rules management
     uv run python -m hkjc_scrapper.cli add-rule --name "..." --tournaments "EPL" --observation "HAD,HHA:event:before_kickoff:30"
     uv run python -m hkjc_scrapper.cli list-rules
     uv run python -m hkjc_scrapper.cli show-rule --name "..."
     uv run python -m hkjc_scrapper.cli enable-rule --name "..."
     uv run python -m hkjc_scrapper.cli disable-rule --name "..."
     uv run python -m hkjc_scrapper.cli delete-rule --name "..."
+
+    # Ad-hoc data retrieval
+    uv run python -m hkjc_scrapper.cli list-matches
+    uv run python -m hkjc_scrapper.cli list-matches --tournament EPL --status SCHEDULED
+    uv run python -m hkjc_scrapper.cli fetch-match --id 50062141 --odds HAD,HHA
+    uv run python -m hkjc_scrapper.cli fetch-match --front-end-id FB4233 --odds HAD
 """
 
 import argparse
@@ -14,6 +21,7 @@ import sys
 
 from pymongo.errors import DuplicateKeyError
 
+from hkjc_scrapper.client import HKJCGraphQLClient
 from hkjc_scrapper.config import Settings
 from hkjc_scrapper.db import MongoDBClient
 from hkjc_scrapper.models import (
@@ -23,6 +31,7 @@ from hkjc_scrapper.models import (
     ScheduleTrigger,
     WatchRule,
 )
+from hkjc_scrapper.parser import parse_matches_response
 
 
 def parse_observation(obs_str: str) -> Observation:
@@ -213,6 +222,145 @@ def cmd_delete_rule(args, db: MongoDBClient) -> int:
     return 1
 
 
+# ============================================================================
+# Ad-hoc data retrieval commands
+# ============================================================================
+
+def cmd_list_matches(args, db: MongoDBClient, client: HKJCGraphQLClient) -> int:
+    """Handle list-matches command: fetch and display current match list."""
+    print("Fetching match list from HKJC API...")
+    try:
+        raw = client.send_basic_match_list_request()
+        matches = parse_matches_response(raw)
+    except Exception as e:
+        print(f"Error fetching matches: {e}")
+        return 1
+
+    if not matches:
+        print("No matches found.")
+        return 0
+
+    # Apply filters
+    filtered = matches
+    if args.tournament:
+        code = args.tournament.upper()
+        filtered = [m for m in filtered if m.tournament.code == code]
+    if args.status:
+        status = args.status.upper()
+        filtered = [m for m in filtered if m.status == status]
+    if args.team:
+        term = args.team.lower()
+        filtered = [
+            m for m in filtered
+            if term in m.homeTeam.name_en.lower()
+            or term in m.awayTeam.name_en.lower()
+        ]
+
+    if not filtered:
+        print("No matches found matching filters.")
+        return 0
+
+    # Print header
+    print(
+        f"\n{'ID':<12} {'FrontEndId':<12} {'Tournament':<8} "
+        f"{'Home':<22} {'Away':<22} {'Kickoff':<18} {'Status'}"
+    )
+    print("-" * 110)
+
+    for m in filtered:
+        kickoff_display = m.kickOffTime[:16].replace("T", " ")
+        print(
+            f"{m.id:<12} {m.frontEndId:<12} {m.tournament.code:<8} "
+            f"{m.homeTeam.name_en:<22} {m.awayTeam.name_en:<22} "
+            f"{kickoff_display:<18} {m.status}"
+        )
+
+    print(f"\n{len(filtered)} matches displayed (of {len(matches)} total)")
+    return 0
+
+
+def cmd_fetch_match(args, db: MongoDBClient, client: HKJCGraphQLClient) -> int:
+    """Handle fetch-match command: fetch odds for a specific match and save."""
+    # Parse odds types
+    if not args.odds:
+        print("Error: --odds is required (e.g., --odds HAD,HHA,HDC)")
+        return 1
+    odds_types = [o.strip().upper() for o in args.odds.split(",")]
+
+    # Determine which match to look for
+    target_id = args.id
+    target_feid = args.front_end_id
+
+    if not target_id and not target_feid:
+        print("Error: provide --id or --front-end-id")
+        return 1
+
+    print(f"Fetching odds [{','.join(odds_types)}] from HKJC API...")
+    try:
+        raw = client.fetch_matches_for_odds(
+            odds_types=odds_types,
+            with_preflight=True,
+        )
+        matches = parse_matches_response(raw)
+    except Exception as e:
+        print(f"Error fetching matches: {e}")
+        return 1
+
+    # Find the target match
+    target = None
+    for m in matches:
+        if target_id and m.id == target_id:
+            target = m
+            break
+        if target_feid and m.frontEndId == target_feid:
+            target = m
+            break
+
+    if target is None:
+        identifier = target_id or target_feid
+        print(f"Match '{identifier}' not found in API response ({len(matches)} matches returned).")
+        print("Use 'list-matches' to see available matches and their IDs.")
+        return 1
+
+    # Display match info
+    print(f"\nMatch: {target.frontEndId} ({target.id})")
+    print(f"  {target.homeTeam.name_en} vs {target.awayTeam.name_en}")
+    print(f"  Tournament: {target.tournament.name_en} ({target.tournament.code})")
+    print(f"  Kickoff: {target.kickOffTime[:16].replace('T', ' ')}")
+    print(f"  Status: {target.status}")
+
+    # Show odds summary
+    if target.foPools:
+        print(f"  Odds pools: {len(target.foPools)}")
+        for pool in target.foPools:
+            line_count = len(pool.lines)
+            comb_count = sum(len(ln.combinations) for ln in pool.lines)
+            print(f"    {pool.oddsType}: {line_count} lines, {comb_count} combinations ({pool.status})")
+            # Show main line odds for common types
+            for ln in pool.lines:
+                if ln.main:
+                    odds_str = " | ".join(
+                        f"{c.str}={c.currentOdds}" for c in ln.combinations
+                    )
+                    condition = f" [{ln.condition}]" if ln.condition else ""
+                    print(f"      Main{condition}: {odds_str}")
+                    break
+    else:
+        print("  Odds pools: 0 (no odds returned for requested types)")
+
+    # Save to DB
+    if args.no_save:
+        print("\n(--no-save: skipping database save)")
+        return 0
+
+    result = db.save_matches([target])
+    print(
+        f"\nSaved to DB: {result['matches_upserted']} match, "
+        f"{result['odds_snapshots']} odds snapshots"
+    )
+    return 0
+
+
 def _print_rule_detail(doc: dict) -> None:
     """Print detailed rule information."""
     print(f"\n  Rule: {doc['name']}")
@@ -289,6 +437,23 @@ def build_parser() -> argparse.ArgumentParser:
     delete_parser = subparsers.add_parser("delete-rule", help="Delete a watch rule")
     delete_parser.add_argument("--name", required=True, help="Rule name")
 
+    # list-matches (ad-hoc)
+    lm_parser = subparsers.add_parser(
+        "list-matches", help="List matches from HKJC API"
+    )
+    lm_parser.add_argument("--tournament", default="", help="Filter by tournament code (e.g., EPL)")
+    lm_parser.add_argument("--status", default="", help="Filter by status (SCHEDULED, FIRSTHALF, etc.)")
+    lm_parser.add_argument("--team", default="", help="Filter by team name (partial match)")
+
+    # fetch-match (ad-hoc)
+    fm_parser = subparsers.add_parser(
+        "fetch-match", help="Fetch odds for a specific match and save to DB"
+    )
+    fm_parser.add_argument("--id", default="", help="Match ID (e.g., 50062141)")
+    fm_parser.add_argument("--front-end-id", default="", help="Front-end match ID (e.g., FB4233)")
+    fm_parser.add_argument("--odds", default="", help="Comma-separated odds types (e.g., HAD,HHA,HDC)")
+    fm_parser.add_argument("--no-save", action="store_true", help="Display only, don't save to DB")
+
     return parser
 
 
@@ -305,7 +470,8 @@ def main(argv: list[str] | None = None) -> int:
     db = MongoDBClient(settings.MONGODB_URI, settings.MONGODB_DATABASE)
     db.ensure_collections()
 
-    commands = {
+    # Commands that only need db
+    db_commands = {
         "add-rule": cmd_add_rule,
         "list-rules": cmd_list_rules,
         "show-rule": cmd_show_rule,
@@ -314,13 +480,21 @@ def main(argv: list[str] | None = None) -> int:
         "delete-rule": cmd_delete_rule,
     }
 
-    handler = commands.get(args.command)
-    if not handler:
-        parser.print_help()
-        return 1
+    # Commands that need both db and client (ad-hoc API calls)
+    api_commands = {
+        "list-matches": cmd_list_matches,
+        "fetch-match": cmd_fetch_match,
+    }
 
     try:
-        return handler(args, db)
+        if args.command in db_commands:
+            return db_commands[args.command](args, db)
+        elif args.command in api_commands:
+            client = HKJCGraphQLClient(settings)
+            return api_commands[args.command](args, db, client)
+        else:
+            parser.print_help()
+            return 1
     finally:
         db.close()
 

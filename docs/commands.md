@@ -104,6 +104,85 @@ uv run python -m hkjc_scrapper.cli delete-rule --name "La Liga Big 3"
 
 ---
 
+## Ad-Hoc Data Retrieval
+
+### List Matches
+
+Browse current matches available on HKJC. Shows match ID, front-end ID, tournament, teams, kickoff time, and status.
+
+```bash
+# List all matches
+uv run python -m hkjc_scrapper.cli list-matches
+
+# Filter by tournament
+uv run python -m hkjc_scrapper.cli list-matches --tournament EPL
+
+# Filter by status
+uv run python -m hkjc_scrapper.cli list-matches --status SCHEDULED
+
+# Filter by team name (partial match, case-insensitive)
+uv run python -m hkjc_scrapper.cli list-matches --team barcelona
+
+# Combine filters
+uv run python -m hkjc_scrapper.cli list-matches --tournament SFL --status SCHEDULED
+```
+
+Example output:
+```
+ID           FrontEndId   Tourn    Home                   Away                   Kickoff            Status
+--------------------------------------------------------------------------------------------------------------
+50062141     FB4233       EPL      Nottingham Forest      Liverpool              2026-02-22 22:00   FIRSTHALF
+50062906     FB4342       MLS      San Diego FC           CF Montreal            2026-02-22 11:30   SECONDHALF
+```
+
+### Fetch Match Odds
+
+Fetch odds for a specific match and save to MongoDB. Use `list-matches` first to find the match ID.
+
+```bash
+# Fetch by match ID (saves to DB by default)
+uv run python -m hkjc_scrapper.cli fetch-match --id 50062141 --odds HAD,HHA,HDC
+
+# Fetch by front-end ID
+uv run python -m hkjc_scrapper.cli fetch-match --front-end-id FB4233 --odds HAD,HIL
+
+# Preview only (don't save to DB)
+uv run python -m hkjc_scrapper.cli fetch-match --id 50062141 --odds HAD --no-save
+```
+
+Example output:
+```
+Match: FB4233 (50062141)
+  Nottingham Forest vs Liverpool
+  Tournament: Eng Premier (EPL)
+  Kickoff: 2026-02-22 22:00
+  Status: FIRSTHALF
+  Odds pools: 3
+    HAD: 1 lines, 3 combinations (SELLINGSTARTED)
+      Main: H=2.50 | D=3.20 | A=2.80
+    HHA: 2 lines, 6 combinations (SELLINGSTARTED)
+      Main [-1.0]: H=1.90 | D=3.40 | A=3.60
+    HDC: 2 lines, 4 combinations (SELLINGSTARTED)
+      Main [-0.5/-1.0]: H=1.85 | A=2.00
+
+Saved to DB: 1 match, 3 odds snapshots
+```
+
+### Typical Workflow
+
+```bash
+# Step 1: See what matches are on today
+uv run python -m hkjc_scrapper.cli list-matches --status SCHEDULED
+
+# Step 2: Find the EPL match you want
+uv run python -m hkjc_scrapper.cli list-matches --tournament EPL
+
+# Step 3: Fetch and store the odds for that match
+uv run python -m hkjc_scrapper.cli fetch-match --id 50062141 --odds HAD,HHA,HDC,HIL,CHL
+```
+
+---
+
 ## One-Time Data Seeding
 
 ### Seed Odds Types (38 types with EN/CH translations)
