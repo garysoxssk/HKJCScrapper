@@ -384,7 +384,7 @@ uv run python -m hkjc_scrapper.cli delete-rule --name "Test Rule"
 
 ---
 
-## Phase 7 - Rule-Based Scheduler (`scheduler.py`)
+## Phase 7 - Rule-Based Scheduler (`scheduler.py`) [COMPLETE]
 
 The scheduler has **two layers**:
 
@@ -395,6 +395,7 @@ Runs every `DISCOVERY_INTERVAL_SECONDS` (default 15 min):
 3. Match each rule's filters against available matches
 4. For each matched (match, observation), calculate absolute fetch times based on the schedule triggers and the match's `kickOffTime`
 5. Schedule/update APScheduler jobs for each calculated fetch time
+6. Also refreshes tournament reference data via `tournamentList` API
 
 ### Layer 2: Fetch Jobs (scheduled at computed times)
 - **Event mode**: One-shot APScheduler `date` trigger at the computed time
@@ -403,17 +404,19 @@ Runs every `DISCOVERY_INTERVAL_SECONDS` (default 15 min):
   - e.g., "fetch CHL for match FB4342 every 300s from kickoff until fulltime"
 
 ### Implementation
-- [ ] `MatchScheduler` class:
+- [x] `MatchScheduler` class:
   - `__init__(client, db, settings)` - initialize with dependencies
   - `start()` - start the discovery job loop
   - `stop()` - graceful shutdown
-  - `run_discovery()` - Layer 1 logic
-  - `evaluate_rules(matches, rules)` - match rules against available matches, return scheduled fetch tasks
-  - `schedule_fetch(match, odds_types, trigger_time)` - schedule a one-shot or interval fetch job
-  - `execute_fetch(match_id, odds_types)` - Layer 2: actually call API, parse, save
-- [ ] Deduplication: avoid scheduling duplicate jobs for the same (match, oddsType, time)
-- [ ] Graceful shutdown handling (SIGINT/SIGTERM)
-- [ ] Error recovery: log and continue on transient failures
+  - `run_discovery()` - Layer 1 logic (fetch matches, evaluate rules, schedule jobs)
+  - `_schedule_observation(match, obs, now)` - schedule event/continuous fetch jobs
+  - `execute_fetch(match_id, front_end_id, odds_types)` - Layer 2: call API, parse, save
+  - `run_once()` - single discovery + fetch cycle (no scheduling loop)
+- [x] Helper functions: `parse_kickoff_time()`, `compute_trigger_time()`, `compute_event_boundary()`
+- [x] Deduplication: avoid scheduling duplicate jobs for the same (match, oddsType, time)
+- [x] Graceful shutdown handling (SIGINT/SIGTERM)
+- [x] Error recovery: log and continue on transient failures
+- [x] Tournament discovery during each cycle
 
 ### Verification
 ```bash
@@ -436,14 +439,16 @@ uv run python -m hkjc_scrapper.main
 
 ---
 
-## Phase 8 - Entry Point (`main.py`)
+## Phase 8 - Entry Point (`main.py`) [COMPLETE]
 
-- [ ] CLI entry point that:
+- [x] CLI entry point that:
   - Loads config from `.env`
   - Initializes the API client, DB client, and scheduler
   - Supports `--once` flag for single fetch of all rule-matched matches (useful for testing)
   - Default mode: starts the discovery + scheduler loop
   - Logs startup info (config summary, DB connection status, active rule count)
+- [x] `__main__.py` for `python -m hkjc_scrapper` support
+- [x] Structured logging with configurable level
 
 ### Verification
 ```bash

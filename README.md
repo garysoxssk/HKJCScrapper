@@ -9,7 +9,7 @@ HKJCScrapper is designed as a modular system with four independent components th
 ### Module I - HKJC Odds Crawler [IN PROGRESS]
 Fetches football match odds from Hong Kong Jockey Club's GraphQL API using a **rule-based scheduler**. Instead of blindly polling everything, you configure watch rules to observe specific matches (by team/tournament), specific odds types, and fetch at configured times (before kickoff, at halftime, continuously during match).
 
-**Status**: Phase 6a complete (MongoDB storage + watch rules CLI). Phase 7 next (rule-based scheduler).
+**Status**: Phase 8 complete (scheduler + entry point). Milestone 2 reached -- full rule-based pipeline running end-to-end.
 
 ### Module II - 3rd Party Football Events Crawler [NOT STARTED]
 Captures live match events (corner kicks, goals, cards, substitutions) with timestamps from an external API. Aligns with HKJC match data using team names + kickoff time for combined analysis.
@@ -126,8 +126,8 @@ uv run pytest tests/ -v
 | 5 | Response parser | ✅ Complete |
 | 6 | MongoDB storage | ✅ Complete |
 | 6a | Watch rules CLI | ✅ Complete |
-| 7 | Rule-based scheduler | 🚧 Next |
-| 8 | Entry point | ⏳ Pending |
+| 7 | Rule-based scheduler | ✅ Complete |
+| 8 | Entry point | ✅ Complete |
 | 9 | Testing (extended) | ⏳ Pending |
 | 10 | Docker deployment | ⏳ Pending |
 
@@ -135,10 +135,10 @@ uv run pytest tests/ -v
 
 | Test Suite | Count | Command |
 |------------|-------|---------|
-| Unit tests (default) | 70 | `uv run pytest` |
-| MongoDB integration | 8 | `uv run pytest -m mongodb` |
-| Live API integration | 4 | `uv run pytest -m integration` |
-| **Total** | **82** | `uv run pytest -m "integration or mongodb" --override-ini="addopts="` |
+| Unit tests (default) | 97 | `uv run pytest` |
+| MongoDB integration | 11 | `uv run pytest -m mongodb` |
+| Live API integration | 5 | `uv run pytest -m integration` |
+| **Total** | **113** | `uv run pytest -m "integration or mongodb" --override-ini="addopts="` |
 
 ## Data Collections
 
@@ -162,8 +162,8 @@ uv run pytest tests/ -v
 
 **Four-module system for football betting analytics:**
 
-- **Module I** (In Progress): Rule-based HKJC odds crawler with configurable watch rules
-  - 18 odds types (HAD, Handicaps, Corners, Correct Scores, etc.)
+- **Module I** (Milestone 2 reached): Rule-based HKJC odds crawler with configurable watch rules
+  - 38 odds types (HAD, Handicaps, Corners, Goal Scorers, Extra Time, etc.)
   - Smart scheduling: before kickoff, at halftime, or continuous during match
   - Two-layer scheduler minimizes API calls while ensuring comprehensive coverage
 

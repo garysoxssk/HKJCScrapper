@@ -203,7 +203,7 @@ Note: `POLL_INTERVAL_SECONDS` and `ODDS_TYPES` are no longer global — they are
 - Created pytest.ini with three markers: default (unit), `integration` (live API), `mongodb` (real MongoDB)
 - Unit tests use mongomock (no external dependencies needed)
 - MongoDB integration tests use `hkjc_test` database with auto-cleanup
-- **Test counts**: 77 unit tests + 11 mongodb integration + 5 API integration = 93 total
+- **Test counts**: 97 unit tests + 11 mongodb integration + 5 API integration = 113 total
 - All tests passing
 
 **Reference Data Enhancements - COMPLETE**
@@ -214,10 +214,26 @@ Note: `POLL_INTERVAL_SECONDS` and `ODDS_TYPES` are no longer global — they are
 - `seed_odds_types()` in db.py for one-time odds type seeding
 - Documentation: `docs/odds_types.md` with full table of all supported odds types
 
-**Phase 7 (Rule-Based Scheduler) - NOT STARTED** <-- Start here
-- See `docs/project_plan.md` for full details and verification steps
+**Phase 7 (Rule-Based Scheduler) - COMPLETE**
+- `MatchScheduler` class in `src/hkjc_scrapper/scheduler.py`
+- Two-layer architecture: Discovery (periodic) + Fetch (scheduled at computed times)
+- Event mode: APScheduler `date` trigger for one-shot fetches (before_kickoff, at_kickoff, at_halftime, after_kickoff)
+- Continuous mode: APScheduler `interval` trigger between start/end events (e.g., kickoff to fulltime)
+- Deduplication: tracks scheduled keys to avoid duplicate jobs
+- Graceful shutdown via SIGINT/SIGTERM signal handlers
+- Tournament discovery integrated into each discovery cycle
+- Helper functions: `parse_kickoff_time()`, `compute_trigger_time()`, `compute_event_boundary()`
+- 20 unit tests for time computation and scheduling logic
 
-**Phases 8-10** - See `docs/project_plan.md` for full details and verification steps for each phase.
+**Phase 8 (Entry Point) - COMPLETE**
+- `src/hkjc_scrapper/main.py` with argparse CLI
+- `--once` flag for single fetch cycle (useful for testing)
+- Default mode: starts discovery + scheduler loop
+- Structured logging with configurable level (LOG_LEVEL)
+- Startup info logging: MongoDB URI, endpoint, mode, active rule count
+- `__main__.py` for `python -m hkjc_scrapper` support
+
+**Phases 9-10** - See `docs/project_plan.md` for full details and verification steps for each phase.
 
 ## Coding Conventions
 
@@ -250,4 +266,7 @@ Note: `POLL_INTERVAL_SECONDS` and `ODDS_TYPES` are no longer global — they are
 - **Phase 6a CLI Implementation**: Watch rules CLI uses argparse with subcommands. Observation string format: `"ODDS:MODE:DETAILS"` where MODE is `event` or `continuous`. Example: `"HAD,HHA:event:before_kickoff:30"` means "fetch HAD and HHA odds 30 minutes before kickoff". CLI connects to MongoDB on each invocation (stateless).
 - **Odds Types from HKJC API**: Extracted 38 odds type translations from HKJC frontend `LB_FB_TITLE_` labels in `description-en-res.json` and `description-ch-res.json`. Includes standard, corner, goal scorer, extra time, and tournament special odds. Full table in `docs/odds_types.md`.
 - **Tournament List API**: HKJC has a separate `tournamentList` GraphQL query (whitelisted, no parameters needed) that returns all available tournaments with ID, code, name_en, name_ch. Stored in `tournaments_ref` collection keyed by tournament ID. Note: same tournament code (e.g., "EPL") can have multiple entries with different IDs (different seasons).
-- **Tournament Discovery**: `upsert_tournaments()` in db.py uses `$setOnInsert` for `createdAt` to only set on first insert, and `$set` for all other fields. This means existing tournaments get their names/metadata updated but retain their creation timestamp. Will be called as a scheduled discovery job in Phase 7.
+- **Tournament Discovery**: `upsert_tournaments()` in db.py uses `$setOnInsert` for `createdAt` to only set on first insert, and `$set` for all other fields. This means existing tournaments get their names/metadata updated but retain their creation timestamp. Called during each scheduler discovery cycle.
+- **Phase 7 Scheduler Implementation**: Two-layer `MatchScheduler` class. Layer 1 (Discovery) runs every `DISCOVERY_INTERVAL_SECONDS`, fetches basic match list, evaluates watch rules, computes absolute trigger times from kickoff + trigger event, and schedules APScheduler jobs. Layer 2 (Fetch) executes at scheduled times: calls API with specific odds types, finds the target match in response, saves to DB. Key design decisions: (1) Dedup via `_scheduled_keys` set prevents duplicate scheduling, (2) Past triggers are silently skipped, (3) Continuous mode adjusts start_time to `now` if already past, (4) fulltime estimated as kickoff + 105min (90min + 15min buffer).
+- **Phase 8 Entry Point**: `main.py` uses argparse with `--once` flag. Service mode sets up SIGINT/SIGTERM handlers and blocks on `scheduler.wait()`. Single-fetch mode (`run_once`) collects all odds types across all matched rules, makes one API call with all needed odds types, filters to matched matches, and saves. This minimizes API calls in one-shot mode.
+- **Milestone 2 Reached**: Full rule-based pipeline running end-to-end: watch rules -> discovery -> scheduled fetches -> MongoDB storage. Can run as service or single-shot.
