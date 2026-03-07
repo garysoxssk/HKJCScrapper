@@ -41,9 +41,9 @@ find src/hkjc_scrapper -name "*.py" | sort
 
 ---
 
-## Phase 2 - Configuration (`config.py`)
+## Phase 2 - Configuration (`config.py`) [COMPLETE]
 
-- [ ] Define `Settings` class using `pydantic-settings`:
+- [x] Define `Settings` class using `pydantic-settings`:
   - `MONGODB_URI` (default: `mongodb://localhost:27017`)
   - `MONGODB_DATABASE` (default: `hkjc`)
   - `GRAPHQL_ENDPOINT` (default: `https://info.cld.hkjc.com/graphql/base/`)
@@ -76,24 +76,28 @@ print('env override ok')
 
 ---
 
-## Phase 3 - Pydantic Data Models (`models.py`)
+## Phase 3 - Pydantic Data Models (`models.py`) [COMPLETE]
 
 Define structured models that mirror the API response.
 
-- [ ] `Team` - id, name_en, name_ch
-- [ ] `Tournament` - id, frontEndId, code, name_en, name_ch
-- [ ] `RunningResult` - homeScore, awayScore, corner, homeCorner, awayCorner
-- [ ] `Selection` - selId, str, name_ch, name_en
-- [ ] `Combination` - combId, str, status, offerEarlySettlement, currentOdds, selections
-- [ ] `Line` - lineId, status, condition, main, combinations
-- [ ] `FoPool` (Fixed Odds Pool) - id, status, oddsType, instNo, inplay, name_ch, name_en, updateAt, expectedSuspendDateTime, lines
-- [ ] `PoolInfo` - normalPools, inplayPools, sellingPools, definedPools, ntsInfo, agsInfo
-- [ ] `TvChannel` - code, name_en, name_ch
-- [ ] `Match` - id, frontEndId, matchDate, kickOffTime, status, updateAt, esIndicatorEnabled, homeTeam, awayTeam, tournament, venue, tvChannels, poolInfo, runningResult, foPools, etc.
-- [ ] `WatchRule` - name, enabled, match_filter, observations (for watch rules — see Phase 6a)
-- [ ] `MatchFilter` - teams, tournaments, match_ids
-- [ ] `Observation` - odds_types, schedule
-- [ ] `Schedule` - mode (event/continuous), triggers, interval_seconds, start_event, end_event
+- [x] `Team` - id, name_en, name_ch
+- [x] `Tournament` - id, frontEndId, code, name_en, name_ch
+- [x] `RunningResult` - homeScore, awayScore, corner, homeCorner, awayCorner
+- [x] `Selection` - selId, str, name_ch, name_en
+- [x] `Combination` - combId, str, status, offerEarlySettlement, currentOdds, selections
+- [x] `Line` - lineId, status, condition, main, combinations
+- [x] `FoPool` (Fixed Odds Pool) - id, status, oddsType, instNo, inplay, name_ch, name_en, updateAt, expectedSuspendDateTime, lines
+- [x] `PoolInfo` - normalPools, inplayPools, sellingPools, definedPools, ntsInfo, entInfo, ngsInfo, agsInfo
+- [x] `TvChannel` - code, name_en, name_ch
+- [x] `Venue` - code, name_en, name_ch
+- [x] `LiveEvent` - id, code
+- [x] `NgsInfo`, `AgsInfo` - goal scorer info
+- [x] `Remark`, `AdminOperation` - admin fields
+- [x] `Match` - id, frontEndId, matchDate, kickOffTime, status, updateAt, esIndicatorEnabled, homeTeam, awayTeam, tournament, venue, tvChannels, liveEvents, poolInfo, runningResult, runningResultExtra, adminOperation, foPools, etc.
+- [x] `WatchRule` - name, enabled, match_filter, observations (for watch rules — see Phase 6a)
+- [x] `MatchFilter` - teams, tournaments, match_ids
+- [x] `Observation` - odds_types, schedule
+- [x] `Schedule` - mode (event/continuous), triggers, interval_seconds, start_event, end_event
 
 ### Verification
 ```bash
@@ -115,9 +119,9 @@ for m in matches[:3]:
 
 ---
 
-## Phase 4 - HKJC GraphQL API Client (`client.py`)
+## Phase 4 - HKJC GraphQL API Client (`client.py`) [COMPLETE]
 
-- [ ] Create `HKJCGraphQLClient` class with:
+- [x] Create `HKJCGraphQLClient` class with:
   - `requests.Session` pre-configured with required headers:
     - `User-Agent` (Chrome-like)
     - `Referer: https://bet.hkjc.com/`
@@ -126,13 +130,14 @@ for m in matches[:3]:
   - GraphQL query templates stored as constants (from the guide):
     - `BASIC_MATCH_LIST_QUERY` (allMatchList - no odds)
     - `DETAILED_MATCH_LIST_QUERY` (with foPools/odds)
-- [ ] Implement methods:
+- [x] Implement methods:
   - `send_options_preflight()` - send OPTIONS request for CORS
   - `send_basic_match_list_request()` - fetch match list without odds
   - `send_detailed_match_list_request(odds_types, start_index, end_index)` - fetch matches with configurable odds types
   - `fetch_matches_for_odds(odds_types)` - full sequence (preflight + query) for specific odds types
-- [ ] Add error handling: retries, timeouts, HTTP status checks, JSON parse errors
-- [ ] Add rate limiting / delay between requests to avoid being blocked
+- [x] Add error handling: retries, timeouts, HTTP status checks, JSON parse errors
+- [x] Add rate limiting / delay between requests to avoid being blocked
+- [x] **CRITICAL**: Use whitelisted query format (all 13 parameters defined, even if null). See `resources/single-match-req-1.txt`
 
 ### Verification
 ```bash
@@ -152,15 +157,16 @@ for m in matches[:3]:
 
 ---
 
-## Phase 5 - Response Parser (`parser.py`)
+## Phase 5 - Response Parser (`parser.py`) [COMPLETE]
 
-- [ ] `parse_matches_response(raw_json: dict) -> list[Match]`
+- [x] `parse_matches_response(raw_json: dict) -> list[Match]`
   - Validate and extract `data.matches` from raw API response
   - Handle missing/null fields gracefully (e.g. `venue: null`, `runningResultExtra: null`)
-- [ ] `filter_matches_by_rule(matches: list[Match], rule: WatchRule) -> list[Match]`
+- [x] `filter_matches_by_rule(matches: list[Match], rule: WatchRule) -> list[Match]`
   - Filter matches by team names, tournament codes, or specific match IDs
-- [ ] `filter_fopools_by_odds_types(matches: list[Match], odds_types: list[str]) -> list[Match]`
+- [x] `filter_fopools_by_odds_types(matches: list[Match], odds_types: list[str]) -> list[Match]`
   - Filter each match's `foPools` to only keep the requested odds types
+- [x] `get_match_description(match: Match) -> str` - Human-readable description
 
 ### Verification
 ```bash
@@ -189,7 +195,7 @@ for m in matches[:2]:
 
 ---
 
-## Phase 6 - MongoDB Storage (`db.py`)
+## Phase 6 - MongoDB Storage (`db.py`) [COMPLETE]
 
 ### Collections Design
 
@@ -271,7 +277,7 @@ Created as a MongoDB time-series collection with `timeField: "fetchedAt"`, `meta
 
 ### Implementation
 
-- [ ] `MongoDBClient` class:
+- [x] `MongoDBClient` class:
   - `__init__(uri, database)` - connect to MongoDB
   - `ensure_collections()` - create time-series collection for `odds_history`, indexes
   - `upsert_match(match: Match)` - insert or update `matches_current`
@@ -279,14 +285,16 @@ Created as a MongoDB time-series collection with `timeField: "fetchedAt"`, `meta
   - `save_matches(matches: list[Match])` - batch upsert matches + insert odds snapshots
   - `get_match(match_id)` - retrieve current state
   - `get_odds_history(match_id, odds_type, time_range)` - query historical odds
+  - `seed_reference_data(odds_types, tournaments)` - seed reference collections
   - **Watch rules CRUD**:
     - `add_watch_rule(rule: WatchRule)`
     - `get_active_watch_rules() -> list[WatchRule]`
+    - `get_all_watch_rules()` / `get_watch_rule(name)`
     - `update_watch_rule(name, updates)`
-    - `disable_watch_rule(name)`
+    - `enable_watch_rule(name)` / `disable_watch_rule(name)`
     - `delete_watch_rule(name)`
-- [ ] Create indexes:
-  - `matches_current`: index on `status`, `tournament.code`, `matchDate`
+- [x] Create indexes:
+  - `matches_current`: index on `status`, `tournament.code`, `matchDate`, `frontEndId` (unique)
   - `odds_history`: compound index on `(matchId, oddsType, fetchedAt)`
   - `watch_rules`: unique index on `name`
 
@@ -326,14 +334,15 @@ print(f'Odds history records: {history_count}')
 
 ---
 
-## Phase 6a - Watch Rules CLI (`cli.py`)
+## Phase 6a - Watch Rules CLI (`cli.py`) [COMPLETE]
 
-- [ ] CLI tool for managing watch rules in MongoDB:
-  - `add-rule` - add a new watch rule
+- [x] CLI tool for managing watch rules in MongoDB:
+  - `add-rule` - add a new watch rule with observation specs
   - `list-rules` - list all rules (with enabled/disabled status)
+  - `show-rule` - display full rule details
   - `enable-rule` / `disable-rule` - toggle a rule
   - `delete-rule` - remove a rule
-  - `show-rule` - display full rule details
+  - Observation string parser for event/continuous modes
 
 ### Example usage
 ```bash

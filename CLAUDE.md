@@ -183,19 +183,33 @@ Note: `POLL_INTERVAL_SECONDS` and `ODDS_TYPES` are no longer global — they are
 - Implemented filter_fopools_by_odds_types() - filters odds pools by type
 - Verified: Sample response parses successfully, filters work correctly
 
+**Phase 6 (MongoDB Storage) - COMPLETE**
+- Implemented `MongoDBClient` in `src/hkjc_scrapper/db.py`
+- Three collections: `matches_current` (upserted), `odds_history` (time-series), `watch_rules` (CRUD)
+- `odds_history` created as MongoDB time-series collection (timeField=fetchedAt, metaField=matchId)
+- Indexes: status, tournament.code, matchDate on matches; compound (matchId, oddsType, fetchedAt) on odds_history; unique name on watch_rules
+- Methods: upsert_match, insert_odds_snapshot, save_matches, get_match, get_odds_history
+- Watch rules CRUD: add, get_active, get_all, get_by_name, update, enable, disable, delete
+- Reference data seeding: seed_reference_data()
+
+**Phase 6a (Watch Rules CLI) - COMPLETE**
+- Implemented CLI in `src/hkjc_scrapper/cli.py` using argparse
+- Commands: add-rule, list-rules, show-rule, enable-rule, disable-rule, delete-rule
+- Observation string parser: `"HAD,HHA:event:before_kickoff:30"` or `"CHL:continuous:300:kickoff:fulltime"`
+- Table output for list-rules, detailed output for show-rule
+
 **Testing Infrastructure - COMPLETE**
-- Added pytest and pytest-mock as dev dependencies
-- Created pytest.ini with integration test marker
-- Unit tests for parser (12 tests, all passing)
-- Unit tests for models (10 tests, all passing)
-- Integration tests for client (4 tests, all passing with live API)
-- Test fixtures using sample JSON response
-- Real API samples in `resources/` directory for reference
+- Added pytest, pytest-mock, and mongomock as dev dependencies
+- Created pytest.ini with three markers: default (unit), `integration` (live API), `mongodb` (real MongoDB)
+- Unit tests use mongomock (no external dependencies needed)
+- MongoDB integration tests use `hkjc_test` database with auto-cleanup
+- **Test counts**: 70 unit tests + 8 mongodb integration + 4 API integration = 82 total
+- All tests passing
 
-**Phase 6 (MongoDB Storage) - NOT STARTED** <-- Start here
-- Implement `MongoDBClient` in `src/hkjc_scrapper/db.py`
+**Phase 7 (Rule-Based Scheduler) - NOT STARTED** <-- Start here
+- See `docs/project_plan.md` for full details and verification steps
 
-**Phases 7-10** - See `docs/project_plan.md` for full details and verification steps for each phase.
+**Phases 8-10** - See `docs/project_plan.md` for full details and verification steps for each phase.
 
 ## Coding Conventions
 
@@ -223,3 +237,6 @@ Note: `POLL_INTERVAL_SECONDS` and `ODDS_TYPES` are no longer global — they are
 - **HKJC API Query Whitelisting Discovery**: Integration tests initially failed with "query isn't whitelisted" error. Discovered HKJC API doesn't accept arbitrary GraphQL queries - only specific pre-approved query structures. Solution: Use exact query format from real API request (see `resources/single-match-req-1.txt`), including ALL parameters defined in query signature even if passed as null/unused. The whitelisted query has ~13 parameters (startIndex, endIndex, startDate, endDate, matchIds, tournIds, fbOddsTypes, fbOddsTypesM, inplayOnly, featuredMatchesOnly, frontEndIds, earlySettlementOnly, showAllMatch). All client methods now use this single whitelisted query format.
 - **API Field Naming**: Initially assumed HKJC API used camelCase (nameEn, nameCh). Real API uses snake_case (name_en, name_ch) for most fields. Some fields like frontEndId, kickOffTime use camelCase. Models updated accordingly. Added new models: Venue, LiveEvent, NgsInfo, AgsInfo, Remark, AdminOperation to handle all fields in real API response.
 - **Real API Samples**: User provided actual API request/response samples in `resources/` directory (`single-match-req-1.txt`, `single-match-res-1.json`). These are the authoritative reference for query structure and response format. Integration tests now successfully fetch live data from HKJC API (tested with 81 matches).
+- **MongoDB Testing Strategy**: User chose "both approaches" for testing: (1) mongomock for unit tests (fast, no external dependency), (2) real MongoDB with `hkjc_test` database for integration tests (supports time-series collections, real indexes). Tests marked with `@pytest.mark.mongodb` for the real DB tests.
+- **Phase 6 MongoDB Implementation**: Implemented MongoDBClient with three collections. `odds_history` uses MongoDB time-series collection (timeField=fetchedAt, metaField=matchId, granularity=minutes). All timestamps stored as UTC. `save_matches()` does both match upsert and odds history append in one call. Reference data seeding uses upsert to be idempotent.
+- **Phase 6a CLI Implementation**: Watch rules CLI uses argparse with subcommands. Observation string format: `"ODDS:MODE:DETAILS"` where MODE is `event` or `continuous`. Example: `"HAD,HHA:event:before_kickoff:30"` means "fetch HAD and HHA odds 30 minutes before kickoff". CLI connects to MongoDB on each invocation (stateless).

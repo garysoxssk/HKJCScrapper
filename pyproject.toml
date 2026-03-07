@@ -27,6 +27,7 @@ testpaths = ["tests"]
 
 [dependency-groups]
 dev = [
+    "mongomock>=4.3.0",
     "pytest>=9.0.2",
     "pytest-mock>=3.15.1",
 ]

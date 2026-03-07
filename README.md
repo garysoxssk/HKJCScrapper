@@ -9,7 +9,7 @@ HKJCScrapper is designed as a modular system with four independent components th
 ### Module I - HKJC Odds Crawler [IN PROGRESS]
 Fetches football match odds from Hong Kong Jockey Club's GraphQL API using a **rule-based scheduler**. Instead of blindly polling everything, you configure watch rules to observe specific matches (by team/tournament), specific odds types, and fetch at configured times (before kickoff, at halftime, continuously during match).
 
-**Status**: Phase 3 complete (configuration + data models). Phase 4 next (API client).
+**Status**: Phase 6a complete (MongoDB storage + watch rules CLI). Phase 7 next (rule-based scheduler).
 
 ### Module II - 3rd Party Football Events Crawler [NOT STARTED]
 Captures live match events (corner kicks, goals, cards, substitutions) with timestamps from an external API. Aligns with HKJC match data using team names + kickoff time for combined analysis.
@@ -122,14 +122,23 @@ uv run pytest tests/ -v
 | 1 | Project scaffolding | ✅ Complete |
 | 2 | Configuration | ✅ Complete |
 | 3 | Pydantic models + reference data | ✅ Complete |
-| 4 | HKJC API client | 🚧 Next |
-| 5 | Response parser | ⏳ Pending |
-| 6 | MongoDB storage | ⏳ Pending |
-| 6a | Watch rules CLI | ⏳ Pending |
-| 7 | Rule-based scheduler | ⏳ Pending |
+| 4 | HKJC API client | ✅ Complete |
+| 5 | Response parser | ✅ Complete |
+| 6 | MongoDB storage | ✅ Complete |
+| 6a | Watch rules CLI | ✅ Complete |
+| 7 | Rule-based scheduler | 🚧 Next |
 | 8 | Entry point | ⏳ Pending |
-| 9 | Testing | ⏳ Pending |
+| 9 | Testing (extended) | ⏳ Pending |
 | 10 | Docker deployment | ⏳ Pending |
+
+### Test Summary
+
+| Test Suite | Count | Command |
+|------------|-------|---------|
+| Unit tests (default) | 70 | `uv run pytest` |
+| MongoDB integration | 8 | `uv run pytest -m mongodb` |
+| Live API integration | 4 | `uv run pytest -m integration` |
+| **Total** | **82** | `uv run pytest -m "integration or mongodb" --override-ini="addopts="` |
 
 ## Data Collections
 
