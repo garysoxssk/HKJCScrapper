@@ -343,3 +343,122 @@ class TestReferenceData:
 
         odds_count = mock_db.db["odds_types_ref"].count_documents({})
         assert odds_count == 1
+
+    def test_seed_odds_types(self, mock_db):
+        """Test seeding odds types only."""
+        odds_types = [
+            {"code": "HAD", "name_en": "Home/Away/Draw", "name_ch": "主客和"},
+            {"code": "CHL", "name_en": "Corner Taken HiLo", "name_ch": "開出角球大細"},
+            {"code": "HDC", "name_en": "Handicap", "name_ch": "讓球"},
+        ]
+        count = mock_db.seed_odds_types(odds_types)
+        assert count == 3
+
+        odds_count = mock_db.db["odds_types_ref"].count_documents({})
+        assert odds_count == 3
+
+
+# ============================================================================
+# Tournament operations
+# ============================================================================
+
+class TestTournamentOperations:
+    """Tests for tournament upsert and query operations."""
+
+    def test_upsert_tournaments_insert(self, mock_db):
+        """Test inserting new tournaments."""
+        tournaments = [
+            {
+                "id": "50050013",
+                "code": "EPL",
+                "frontEndId": "FB3397",
+                "nameProfileId": "50000051",
+                "isInteractiveServiceAvailable": True,
+                "name_en": "Eng Premier",
+                "name_ch": "英格蘭超級聯賽",
+                "sequence": "12.Eng Premier...",
+            },
+            {
+                "id": "50050294",
+                "code": "SFL",
+                "frontEndId": "FB3742",
+                "nameProfileId": "50000100",
+                "isInteractiveServiceAvailable": True,
+                "name_en": "Spanish Division 1",
+                "name_ch": "西班牙甲組聯賽",
+                "sequence": "23.Spanish Division 1...",
+            },
+        ]
+        result = mock_db.upsert_tournaments(tournaments)
+        assert result["inserted"] == 2
+        assert result["updated"] == 0
+
+    def test_upsert_tournaments_no_duplicate(self, mock_db):
+        """Test that re-upserting same ID doesn't create duplicates."""
+        tournaments = [
+            {
+                "id": "50050013",
+                "code": "EPL",
+                "frontEndId": "FB3397",
+                "nameProfileId": "50000051",
+                "isInteractiveServiceAvailable": True,
+                "name_en": "Eng Premier",
+                "name_ch": "英格蘭超級聯賽",
+                "sequence": "12.Eng Premier...",
+            },
+        ]
+        mock_db.upsert_tournaments(tournaments)
+        result = mock_db.upsert_tournaments(tournaments)
+
+        # Second time: 0 inserted (already exists)
+        assert result["inserted"] == 0
+
+        total = mock_db.db["tournaments_ref"].count_documents({})
+        assert total == 1
+
+    def test_get_tournament_by_id(self, mock_db):
+        """Test retrieving a tournament by ID."""
+        tournaments = [
+            {
+                "id": "50050013",
+                "code": "EPL",
+                "frontEndId": "FB3397",
+                "nameProfileId": "",
+                "isInteractiveServiceAvailable": True,
+                "name_en": "Eng Premier",
+                "name_ch": "英格蘭超級聯賽",
+                "sequence": "",
+            },
+        ]
+        mock_db.upsert_tournaments(tournaments)
+
+        doc = mock_db.get_tournament_by_id("50050013")
+        assert doc is not None
+        assert doc["code"] == "EPL"
+
+    def test_get_tournament_by_id_not_found(self, mock_db):
+        """Test retrieving a non-existent tournament."""
+        doc = mock_db.get_tournament_by_id("nonexistent")
+        assert doc is None
+
+    def test_get_tournament_by_code(self, mock_db):
+        """Test retrieving tournaments by code."""
+        tournaments = [
+            {"id": "1", "code": "EPL", "name_en": "Eng Premier", "name_ch": "英超", "sequence": ""},
+            {"id": "2", "code": "EPL", "name_en": "Eng Premier 2", "name_ch": "英超2", "sequence": ""},
+        ]
+        mock_db.upsert_tournaments(tournaments)
+
+        results = mock_db.get_tournament_by_code("EPL")
+        assert len(results) == 2
+
+    def test_get_all_tournaments(self, mock_db):
+        """Test retrieving all tournaments."""
+        tournaments = [
+            {"id": "1", "code": "EPL", "name_en": "Eng Premier", "name_ch": "英超", "sequence": ""},
+            {"id": "2", "code": "SFL", "name_en": "Spanish Div 1", "name_ch": "西甲", "sequence": ""},
+        ]
+        mock_db.upsert_tournaments(tournaments)
+
+        all_t = mock_db.get_all_tournaments()
+        assert len(all_t) == 2

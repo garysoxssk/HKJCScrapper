@@ -132,6 +132,23 @@ query matchList($startIndex: Int, $endIndex: Int,$startDate: String, $endDate: S
 """
 
 
+# Tournament list query - also whitelisted, exact format from real API
+TOURNAMENT_LIST_QUERY = """
+    query tournamentList {
+      tournamentList {
+        id
+        code
+        frontEndId
+        nameProfileId
+        isInteractiveServiceAvailable
+        name_ch
+        name_en
+        sequence
+      }
+    }
+  """
+
+
 class HKJCGraphQLClient:
     """Client for HKJC GraphQL API with browser simulation."""
 
@@ -311,3 +328,27 @@ class HKJCGraphQLClient:
             start_index=start_index,
             end_index=end_index
         )
+
+    def send_tournament_list_request(self) -> dict:
+        """
+        Fetch the list of all available tournaments.
+
+        Returns:
+            JSON response as dict with structure:
+            {"data": {"tournamentList": [{"id", "code", "name_en", "name_ch", ...}]}}
+
+        Raises:
+            requests.HTTPError: If request fails
+        """
+        payload = {
+            "query": TOURNAMENT_LIST_QUERY,
+            "variables": {},
+        }
+
+        response = self.session.post(self.endpoint, json=payload, timeout=30)
+
+        if response.status_code >= 400:
+            print(f"ERROR {response.status_code}: {response.text[:500]}")
+
+        response.raise_for_status()
+        return response.json()

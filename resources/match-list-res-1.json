@@ -1,0 +1,1326 @@
+{
+    "data": {
+        "tournamentList": [
+            {
+                "id": "50045209",
+                "code": "BD1",
+                "frontEndId": "",
+                "nameProfileId": "50000027",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "巴西甲組聯賽",
+                "name_en": "Brazilian Division 1",
+                "sequence": "57.Brazilian Division 1                                                                                                            .2025-12-31.000"
+            },
+            {
+                "id": "50063709",
+                "code": "KD2",
+                "frontEndId": "",
+                "nameProfileId": "51334928",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "南韓乙組聯賽",
+                "name_en": "Korean Division 2",
+                "sequence": "21.Korean Division 2                                                                                                               .2026-12-01.000"
+            },
+            {
+                "id": "50050425",
+                "code": "ISA",
+                "frontEndId": "FB3876",
+                "nameProfileId": "50000069",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "意大利甲組聯賽",
+                "name_en": "Italian Division 1",
+                "sequence": "24.Italian Division 1                                                                                                              .2026-05-26.000"
+            },
+            {
+                "id": "50061893",
+                "code": "JV1",
+                "frontEndId": "",
+                "nameProfileId": "51334929",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "日職百年構想聯賽",
+                "name_en": "J1 100Y Vision League",
+                "sequence": "16.J1 100Y Vision League                                                                                                           .2026-06-09.000"
+            },
+            {
+                "id": "50046350",
+                "code": "BD1W",
+                "frontEndId": "",
+                "nameProfileId": "50736544",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "女子巴西甲組聯賽",
+                "name_en": "Women Brazilian Division 1",
+                "sequence": "99.Women Brazilian Division 1                                                                                                      .2025-09-16.000"
+            },
+            {
+                "id": "50064045",
+                "code": "NWC",
+                "frontEndId": "FB4937",
+                "nameProfileId": "50000081",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "挪威盃",
+                "name_en": "Norwegian Cup",
+                "sequence": "74.Norwegian Cup                                                                                                                   .2026-05-12.000"
+            },
+            {
+                "id": "50051301",
+                "code": "AC2",
+                "frontEndId": "FB4386",
+                "nameProfileId": "50621170",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "亞冠盃2",
+                "name_en": "Asian Champions League 2",
+                "sequence": "19.Asian Champions League 2                                                                                                        .2026-05-19.000"
+            },
+            {
+                "id": "50060623",
+                "code": "AGC",
+                "frontEndId": "FB2417",
+                "nameProfileId": "50000013",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "阿根廷盃",
+                "name_en": "Argentine Cup",
+                "sequence": "82.Argentine Cup                                                                                                                   .2026-11-09.000"
+            },
+            {
+                "id": "50052905",
+                "code": "FFLW",
+                "frontEndId": "",
+                "nameProfileId": "50671046",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "女子法國甲組聯賽",
+                "name_en": "Women French Division 1",
+                "sequence": "90.Women French Division 1                                                                                                         .2026-06-02.000"
+            },
+            {
+                "id": "50052509",
+                "code": "QSC",
+                "frontEndId": "FB2831",
+                "nameProfileId": "50644905",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "卡塔爾星盃",
+                "name_en": "Qatar Stars Cup",
+                "sequence": "47.Qatar Stars Cup                                                                                                                 .2026-04-01.000"
+            },
+            {
+                "id": "50051587",
+                "code": "UPR",
+                "frontEndId": "",
+                "nameProfileId": "51104813",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "阿聯酋職業聯賽",
+                "name_en": "UAE Pro League",
+                "sequence": "50.UAE Pro League                                                                                                                  .2026-05-31.000"
+            },
+            {
+                "id": "50060021",
+                "code": "MD1",
+                "frontEndId": "",
+                "nameProfileId": "50610021",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "墨西哥甲組聯賽",
+                "name_en": "Mexican Division 1",
+                "sequence": "31.Mexican Division 1                                                                                                              .2026-05-19.000"
+            },
+            {
+                "id": "50052450",
+                "code": "ULP",
+                "frontEndId": "FB0508",
+                "nameProfileId": "51104815",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "阿聯酋聯賽盃",
+                "name_en": "UAE League Cup",
+                "sequence": "51.UAE League Cup                                                                                                                  .2026-05-04.000"
+            },
+            {
+                "id": "50062774",
+                "code": "MLS",
+                "frontEndId": "",
+                "nameProfileId": "50000116",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "美國職業聯賽",
+                "name_en": "US Major League",
+                "sequence": "30.US Major League                                                                                                                 .2026-12-31.000"
+            },
+            {
+                "id": "50031764",
+                "code": "GD2",
+                "frontEndId": "",
+                "nameProfileId": "50000064",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "德國乙組聯賽",
+                "name_en": "German Division 2",
+                "sequence": "42.German Division 2                                                                                                               .2025-06-02.000"
+            },
+            {
+                "id": "50051157",
+                "code": "PFL",
+                "frontEndId": "",
+                "nameProfileId": "50000088",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "葡萄牙超級聯賽",
+                "name_en": "Portuguese Premier",
+                "sequence": "60.Portuguese Premier                                                                                                              .2026-06-03.000"
+            },
+            {
+                "id": "50060945",
+                "code": "BD1",
+                "frontEndId": "",
+                "nameProfileId": "50000027",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "巴西甲組聯賽",
+                "name_en": "Brazilian Division 1",
+                "sequence": "57.Brazilian Division 1                                                                                                            .2026-12-04.000"
+            },
+            {
+                "id": "50050456",
+                "code": "ED3",
+                "frontEndId": "",
+                "nameProfileId": "50000048",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "英格蘭乙組聯賽",
+                "name_en": "Eng League 2",
+                "sequence": "67.Eng League 2                                                                                                                    .2026-05-27.000"
+            },
+            {
+                "id": "50049488",
+                "code": "EAC",
+                "frontEndId": "",
+                "nameProfileId": "50000044",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "東亞錦標賽",
+                "name_en": "East Asian Championship",
+                "sequence": "03.East Asian Championship                                                                                                         .2025-07-16.000"
+            },
+            {
+                "id": "50049992",
+                "code": "MCCW",
+                "frontEndId": "",
+                "nameProfileId": "51063874",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "女子墨西哥冠軍盃",
+                "name_en": "Women Mexican Champion Cup",
+                "sequence": "99.Women Mexican Champion Cup                                                                                                      .2025-07-18.000"
+            },
+            {
+                "id": "50051494",
+                "code": "SF2",
+                "frontEndId": "",
+                "nameProfileId": "50000101",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "西班牙乙組聯賽",
+                "name_en": "Spanish Division 2",
+                "sequence": "63.Spanish Division 2                                                                                                              .2026-06-23.000"
+            },
+            {
+                "id": "50042478",
+                "code": "KD1",
+                "frontEndId": "",
+                "nameProfileId": "50000075",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "南韓職業聯賽",
+                "name_en": "Korean Division 1",
+                "sequence": "18.Korean Division 1                                                                                                               .2025-12-16.000"
+            },
+            {
+                "id": "50030466",
+                "code": "CUP",
+                "frontEndId": "",
+                "nameProfileId": "50000039",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "盃賽",
+                "name_en": "Cup Competition",
+                "sequence": "20.Cup Competition                                                                                                                 .2025-06-30.000"
+            },
+            {
+                "id": "50049490",
+                "code": "EAW",
+                "frontEndId": "",
+                "nameProfileId": "50000120",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "女子東亞錦標賽",
+                "name_en": "Women East Asian Championship",
+                "sequence": "04.Women East Asian Championship                                                                                                   .2025-07-17.000"
+            },
+            {
+                "id": "50050294",
+                "code": "SFL",
+                "frontEndId": "FB3742",
+                "nameProfileId": "50000100",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "西班牙甲組聯賽",
+                "name_en": "Spanish Division 1",
+                "sequence": "23.Spanish Division 1                                                                                                              .2026-05-26.000"
+            },
+            {
+                "id": "50052113",
+                "code": "DSCW",
+                "frontEndId": "",
+                "nameProfileId": "51066817",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "女子荷蘭超級盃",
+                "name_en": "Women Dutch Super Cup",
+                "sequence": "99.Women Dutch Super Cup                                                                                                           .2025-08-25.000"
+            },
+            {
+                "id": "50050646",
+                "code": "SPL",
+                "frontEndId": "FB4697",
+                "nameProfileId": "50000095",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "蘇格蘭超級聯賽",
+                "name_en": "Scottish Premier",
+                "sequence": "60.Scottish Premier                                                                                                                .2026-05-27.000"
+            },
+            {
+                "id": "50047093",
+                "code": "SALW",
+                "frontEndId": "",
+                "nameProfileId": "50651726",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "女子瑞典超級聯賽",
+                "name_en": "Women Swedish Division 1",
+                "sequence": "94.Women Swedish Division 1                                                                                                        .2025-11-18.000"
+            },
+            {
+                "id": "50063758",
+                "code": "SAC",
+                "frontEndId": "FB4851",
+                "nameProfileId": "50000096",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "南美球會盃",
+                "name_en": "Copa Sudamericana",
+                "sequence": "34.Copa Sudamericana                                                                                                               .2026-03-07.000"
+            },
+            {
+                "id": "50060464",
+                "code": "EFAW",
+                "frontEndId": "",
+                "nameProfileId": "50703841",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "女子英格蘭足總盃",
+                "name_en": "Women FA Cup",
+                "sequence": "99.Women FA Cup                                                                                                                    .2026-06-02.000"
+            },
+            {
+                "id": "50039892",
+                "code": "SFCW",
+                "frontEndId": "",
+                "nameProfileId": "50703847",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "女子西班牙盃",
+                "name_en": "Women Spanish Cup",
+                "sequence": "99.Women Spanish Cup                                                                                                               .2025-06-10.000"
+            },
+            {
+                "id": "50052584",
+                "code": "ELT",
+                "frontEndId": "FB0623",
+                "nameProfileId": "50000050",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "英格蘭聯賽錦標",
+                "name_en": "Eng League Trophy",
+                "sequence": "59.Eng League Trophy                                                                                                               .2026-04-14.000"
+            },
+            {
+                "id": "50058892",
+                "code": "DACW",
+                "frontEndId": "",
+                "nameProfileId": "50736541",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "女子荷蘭盃",
+                "name_en": "Women Dutch Cup",
+                "sequence": "99.Women Dutch Cup                                                                                                                 .2026-06-02.000"
+            },
+            {
+                "id": "50045199",
+                "code": "NTL",
+                "frontEndId": "",
+                "nameProfileId": "50000082",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "挪威超級聯賽",
+                "name_en": "Norwegian Division 1",
+                "sequence": "52.Norwegian Division 1                                                                                                            .2025-12-14.000"
+            },
+            {
+                "id": "50050013",
+                "code": "EPL",
+                "frontEndId": "FB3397",
+                "nameProfileId": "50000051",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "英格蘭超級聯賽",
+                "name_en": "Eng Premier",
+                "sequence": "12.Eng Premier                                                                                                                     .2026-05-26.000"
+            },
+            {
+                "id": "50059478",
+                "code": "TL1",
+                "frontEndId": "",
+                "nameProfileId": "51293328",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "泰國甲組聯賽",
+                "name_en": "Thai League 1",
+                "sequence": "41.Thai League 1                                                                                                                   .2026-05-11.000"
+            },
+            {
+                "id": "50051260",
+                "code": "GSC",
+                "frontEndId": "FB4450",
+                "nameProfileId": "50000062",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "德國盃",
+                "name_en": "German Cup",
+                "sequence": "70.German Cup                                                                                                                      .2026-05-25.000"
+            },
+            {
+                "id": "50050497",
+                "code": "RFC",
+                "frontEndId": "",
+                "nameProfileId": "50000090",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "俄羅斯盃",
+                "name_en": "Russian Cup",
+                "sequence": "75.Russian Cup                                                                                                                     .2026-05-26.000"
+            },
+            {
+                "id": "50061460",
+                "code": "LBC",
+                "frontEndId": "FB3533",
+                "nameProfileId": "50000038",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "南美自由盃",
+                "name_en": "Copa Libertadores",
+                "sequence": "33.Copa Libertadores                                                                                                               .2026-03-20.000"
+            },
+            {
+                "id": "50059700",
+                "code": "MXLW",
+                "frontEndId": "",
+                "nameProfileId": "50651731",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "女子墨西哥超級聯賽",
+                "name_en": "Women Mexican Premier",
+                "sequence": "39.Women Mexican Premier                                                                                                           .2026-06-30.000"
+            },
+            {
+                "id": "50050161",
+                "code": "BFL",
+                "frontEndId": "",
+                "nameProfileId": "50000024",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "比利時甲組聯賽",
+                "name_en": "Belgian Division 1",
+                "sequence": "61.Belgian Division 1                                                                                                              .2026-05-26.000"
+            },
+            {
+                "id": "50052903",
+                "code": "GSLW",
+                "frontEndId": "",
+                "nameProfileId": "50658616",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "女子德國甲組聯賽",
+                "name_en": "Women German Division 1",
+                "sequence": "89.Women German Division 1                                                                                                         .2026-05-19.000"
+            },
+            {
+                "id": "50060763",
+                "code": "APL",
+                "frontEndId": "",
+                "nameProfileId": "50000014",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "阿根廷甲組聯賽",
+                "name_en": "Argentine Division 1",
+                "sequence": "56.Argentine Division 1                                                                                                            .2026-05-20.000"
+            },
+            {
+                "id": "50036007",
+                "code": "FFLW",
+                "frontEndId": "",
+                "nameProfileId": "50671046",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "女子法國甲組聯賽",
+                "name_en": "Women French Division 1",
+                "sequence": "47.Women French Division 1                                                                                                         .2025-05-20.000"
+            },
+            {
+                "id": "50055302",
+                "code": "AD1",
+                "frontEndId": "",
+                "nameProfileId": "50000021",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "澳洲職業聯賽",
+                "name_en": "Australian Division 1",
+                "sequence": "14.Australian Division 1                                                                                                           .2026-05-26.000"
+            },
+            {
+                "id": "50050423",
+                "code": "GSL",
+                "frontEndId": "FB3874",
+                "nameProfileId": "50000063",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "德國甲組聯賽",
+                "name_en": "German Division 1",
+                "sequence": "25.German Division 1                                                                                                               .2026-05-27.000"
+            },
+            {
+                "id": "50033626",
+                "code": "ENL",
+                "frontEndId": "FB9329",
+                "nameProfileId": "50000055",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "歐洲國家聯賽",
+                "name_en": "Euro Nations League",
+                "sequence": "35.Euro Nations League                                                                                                             .2026-04-02.000"
+            },
+            {
+                "id": "50034444",
+                "code": "JD1W",
+                "frontEndId": "",
+                "nameProfileId": "50651730",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "女子日本職業聯賽",
+                "name_en": "Women Japanese Division 1",
+                "sequence": "22.Women Japanese Division 1                                                                                                       .2025-05-20.000"
+            },
+            {
+                "id": "50051120",
+                "code": "ED1",
+                "frontEndId": "FB3811",
+                "nameProfileId": "50000046",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "英格蘭冠軍聯賽",
+                "name_en": "Eng Championship",
+                "sequence": "41.Eng Championship                                                                                                                .2026-05-27.000"
+            },
+            {
+                "id": "50048730",
+                "code": "E2Q",
+                "frontEndId": "",
+                "nameProfileId": "50000109",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "U21歐國外",
+                "name_en": "U21 Euro Qualifiers",
+                "sequence": "36.U21 Euro Qualifiers                                                                                                             .2026-11-30.000"
+            },
+            {
+                "id": "50052924",
+                "code": "SPLW",
+                "frontEndId": "",
+                "nameProfileId": "50662936",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "女子蘇格蘭超級聯賽",
+                "name_en": "Women Scottish Premier",
+                "sequence": "97.Women Scottish Premier                                                                                                          .2026-06-02.000"
+            },
+            {
+                "id": "50034442",
+                "code": "GSLW",
+                "frontEndId": "",
+                "nameProfileId": "50658616",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "女子德國甲組聯賽",
+                "name_en": "Women German Division 1",
+                "sequence": "46.Women German Division 1                                                                                                         .2025-05-13.000"
+            },
+            {
+                "id": "50061296",
+                "code": "CHC",
+                "frontEndId": "",
+                "nameProfileId": "50000031",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "智利盃",
+                "name_en": "Chilean Cup",
+                "sequence": "84.Chilean Cup                                                                                                                     .2026-11-30.000"
+            },
+            {
+                "id": "50062058",
+                "code": "QAC",
+                "frontEndId": "",
+                "nameProfileId": "50934654",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "卡塔爾王子盃",
+                "name_en": "Qatar Amir Cup",
+                "sequence": "47.Qatar Amir Cup                                                                                                                  .2026-06-30.000"
+            },
+            {
+                "id": "50053763",
+                "code": "ELCW",
+                "frontEndId": "",
+                "nameProfileId": "50718049",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "女子英格蘭聯賽盃",
+                "name_en": "Women Eng League Cup",
+                "sequence": "99.Women Eng League Cup                                                                                                            .2026-04-07.000"
+            },
+            {
+                "id": "50051300",
+                "code": "ACL",
+                "frontEndId": "FB4320",
+                "nameProfileId": "50000016",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "亞冠精英盃",
+                "name_en": "Asian Champions League Elite",
+                "sequence": "15.Asian Champions League Elite                                                                                                    .2026-05-05.000"
+            },
+            {
+                "id": "50052906",
+                "code": "EPLW",
+                "frontEndId": "",
+                "nameProfileId": "50651728",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "女子英格蘭超級聯賽",
+                "name_en": "Women Eng Premier",
+                "sequence": "42.Women Eng Premier                                                                                                               .2026-05-19.000"
+            },
+            {
+                "id": "50051180",
+                "code": "QSL",
+                "frontEndId": "",
+                "nameProfileId": "50621135",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "卡塔爾超級聯賽",
+                "name_en": "Qatar Stars League",
+                "sequence": "46.Qatar Stars League                                                                                                              .2026-05-01.000"
+            },
+            {
+                "id": "50057488",
+                "code": "GSCW",
+                "frontEndId": "FB9729",
+                "nameProfileId": "50703842",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "女子德國盃",
+                "name_en": "Women German Cup",
+                "sequence": "99.Women German Cup                                                                                                                .2026-05-18.000"
+            },
+            {
+                "id": "50050994",
+                "code": "DFL",
+                "frontEndId": "",
+                "nameProfileId": "50000041",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "荷蘭甲組聯賽",
+                "name_en": "Dutch Division 1",
+                "sequence": "58.Dutch Division 1                                                                                                                .2026-06-30.000"
+            },
+            {
+                "id": "50052073",
+                "code": "UCLW",
+                "frontEndId": "FB5201",
+                "nameProfileId": "50651729",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "女子歐洲聯賽冠軍盃",
+                "name_en": "Women UE Champions",
+                "sequence": "43.Women UE Champions                                                                                                              .2026-05-26.000"
+            },
+            {
+                "id": "50051136",
+                "code": "DF2",
+                "frontEndId": "",
+                "nameProfileId": "50000042",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "荷蘭乙組聯賽",
+                "name_en": "Dutch Division 2",
+                "sequence": "64.Dutch Division 2                                                                                                                .2026-05-29.000"
+            },
+            {
+                "id": "50049443",
+                "code": "INT",
+                "frontEndId": "",
+                "nameProfileId": "50000067",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "國際賽",
+                "name_en": "International Matches",
+                "sequence": "38.International Matches                                                                                                           .2026-06-30.000"
+            },
+            {
+                "id": "50057475",
+                "code": "FFA",
+                "frontEndId": "FB9601",
+                "nameProfileId": "50000060",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "法國足總盃",
+                "name_en": "French FA Cup",
+                "sequence": "71.French FA Cup                                                                                                                   .2026-05-26.000"
+            },
+            {
+                "id": "50051015",
+                "code": "FF2",
+                "frontEndId": "",
+                "nameProfileId": "50000059",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "法國乙組聯賽",
+                "name_en": "French Division 2",
+                "sequence": "65.French Division 2                                                                                                               .2026-06-30.000"
+            },
+            {
+                "id": "50060552",
+                "code": "SFA",
+                "frontEndId": "FB2217",
+                "nameProfileId": "50000093",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "蘇格蘭足總盃",
+                "name_en": "Scottish FA Cup",
+                "sequence": "79.Scottish FA Cup                                                                                                                 .2026-05-26.000"
+            },
+            {
+                "id": "50050024",
+                "code": "RPL",
+                "frontEndId": "",
+                "nameProfileId": "50000091",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "俄羅斯超級聯賽",
+                "name_en": "Russian Premier",
+                "sequence": "53.Russian Premier                                                                                                                 .2026-06-02.000"
+            },
+            {
+                "id": "50053663",
+                "code": "UEC",
+                "frontEndId": "FB3534",
+                "nameProfileId": "50000114",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "歐霸盃",
+                "name_en": "UE Cup",
+                "sequence": "27.UE Cup                                                                                                                          .2026-05-22.000"
+            },
+            {
+                "id": "50051293",
+                "code": "IFC",
+                "frontEndId": "FB4301",
+                "nameProfileId": "50000068",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "意大利盃",
+                "name_en": "Italian Cup",
+                "sequence": "69.Italian Cup                                                                                                                     .2026-05-27.000"
+            },
+            {
+                "id": "50050387",
+                "code": "ELC",
+                "frontEndId": "FB3743",
+                "nameProfileId": "50000049",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "英格蘭聯賽盃",
+                "name_en": "Eng League Cup",
+                "sequence": "55.Eng League Cup                                                                                                                  .2026-03-24.000"
+            },
+            {
+                "id": "50042548",
+                "code": "CD1",
+                "frontEndId": "",
+                "nameProfileId": "50000032",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "智利甲組聯賽",
+                "name_en": "Chilean Division 1",
+                "sequence": "62.Chilean Division 1                                                                                                              .2025-12-09.000"
+            },
+            {
+                "id": "50062410",
+                "code": "AVC",
+                "frontEndId": "",
+                "nameProfileId": "51334931",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "澳洲全國聯賽 - 維多利亞",
+                "name_en": "Australian NPL - Victoria",
+                "sequence": "20.Australian NPL - Victoria                                                                                                       .2026-09-22.000"
+            },
+            {
+                "id": "50063340",
+                "code": "SWCW",
+                "frontEndId": "",
+                "nameProfileId": "50703848",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "女子瑞典盃",
+                "name_en": "Women Swedish Cup",
+                "sequence": "99.Women Swedish Cup                                                                                                               .2026-05-17.000"
+            },
+            {
+                "id": "50033206",
+                "code": "SDL",
+                "frontEndId": "",
+                "nameProfileId": "50630053",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "沙特職業聯賽",
+                "name_en": "Saudi Pro League",
+                "sequence": "52.Saudi Pro League                                                                                                                .2025-05-31.000"
+            },
+            {
+                "id": "50054504",
+                "code": "ISAW",
+                "frontEndId": "",
+                "nameProfileId": "50658617",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "女子意大利甲組聯賽",
+                "name_en": "Women Italian Division 1",
+                "sequence": "87.Women Italian Division 1                                                                                                        .2026-05-19.000"
+            },
+            {
+                "id": "50064216",
+                "code": "USL",
+                "frontEndId": "",
+                "nameProfileId": "51168536",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "美國冠軍聯賽",
+                "name_en": "USL Championship",
+                "sequence": "32.USL Championship                                                                                                                .2026-11-24.000"
+            },
+            {
+                "id": "50055627",
+                "code": "PFC",
+                "frontEndId": "FB7921",
+                "nameProfileId": "50000086",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "葡萄牙盃",
+                "name_en": "Portuguese Cup",
+                "sequence": "77.Portuguese Cup                                                                                                                  .2026-06-01.000"
+            },
+            {
+                "id": "50030465",
+                "code": "INT",
+                "frontEndId": "",
+                "nameProfileId": "50000067",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "國際賽",
+                "name_en": "International Matches",
+                "sequence": "20.International Matches                                                                                                           .2025-06-30.000"
+            },
+            {
+                "id": "50042477",
+                "code": "JD2",
+                "frontEndId": "",
+                "nameProfileId": "50000072",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "日本乙組聯賽",
+                "name_en": "Japanese Division 2",
+                "sequence": "17.Japanese Division 2                                                                                                             .2025-12-23.000"
+            },
+            {
+                "id": "50056380",
+                "code": "BFC",
+                "frontEndId": "FB8722",
+                "nameProfileId": "50000023",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "比利時盃",
+                "name_en": "Belgian Cup",
+                "sequence": "81.Belgian Cup                                                                                                                     .2026-05-24.000"
+            },
+            {
+                "id": "50020416",
+                "code": "WCQ",
+                "frontEndId": "FB7124",
+                "nameProfileId": "50000119",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "世盃外圍賽",
+                "name_en": "WC Qualifiers",
+                "sequence": "35.WC Qualifiers                                                                                                                   .2026-04-02.000"
+            },
+            {
+                "id": "50049677",
+                "code": "MXLW",
+                "frontEndId": "",
+                "nameProfileId": "50651731",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "女子墨西哥超級聯賽",
+                "name_en": "Women Mexican Premier",
+                "sequence": "40.Women Mexican Premier                                                                                                           .2025-12-15.000"
+            },
+            {
+                "id": "50059893",
+                "code": "MXL",
+                "frontEndId": "",
+                "nameProfileId": "50000079",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "墨西哥超級聯賽",
+                "name_en": "Mexican Premier",
+                "sequence": "29.Mexican Premier                                                                                                                 .2026-05-26.000"
+            },
+            {
+                "id": "50056117",
+                "code": "DAC",
+                "frontEndId": "FB8679",
+                "nameProfileId": "50000040",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "荷蘭盃",
+                "name_en": "Dutch Cup",
+                "sequence": "76.Dutch Cup                                                                                                                       .2026-04-21.000"
+            },
+            {
+                "id": "50049466",
+                "code": "CLB",
+                "frontEndId": "",
+                "nameProfileId": "50000034",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "球會賽",
+                "name_en": "Club Matches",
+                "sequence": "38.Club Matches                                                                                                                    .2026-06-30.000"
+            },
+            {
+                "id": "50046423",
+                "code": "NTLW",
+                "frontEndId": "",
+                "nameProfileId": "50651727",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "女子挪威超級聯賽",
+                "name_en": "Women Norwegian Division 1",
+                "sequence": "93.Women Norwegian Division 1                                                                                                      .2025-11-26.000"
+            },
+            {
+                "id": "50053770",
+                "code": "SKC",
+                "frontEndId": "FB6517",
+                "nameProfileId": "50662937",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "沙特國王盃",
+                "name_en": "Saudi King's Cup",
+                "sequence": "49.Saudi King's Cup                                                                                                                .2026-06-02.000"
+            },
+            {
+                "id": "50061951",
+                "code": "ANS",
+                "frontEndId": "",
+                "nameProfileId": "51334933",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "澳洲全國聯賽 - 新南威爾斯",
+                "name_en": "Australian NPL - New South Wales",
+                "sequence": "20.Australian NPL - New South Wales                                                                                                .2026-09-15.000"
+            },
+            {
+                "id": "50060028",
+                "code": "BPC",
+                "frontEndId": "FB4236",
+                "nameProfileId": "50000028",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "巴西聖保羅省聯賽",
+                "name_en": "Brazilian Paulista League",
+                "sequence": "83.Brazilian Paulista League                                                                                                       .2026-03-10.000"
+            },
+            {
+                "id": "50052904",
+                "code": "DFLW",
+                "frontEndId": "",
+                "nameProfileId": "50671045",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "女子荷蘭甲組聯賽",
+                "name_en": "Women Dutch Division 1",
+                "sequence": "95.Women Dutch Division 1                                                                                                          .2026-05-25.000"
+            },
+            {
+                "id": "50056140",
+                "code": "EFA",
+                "frontEndId": "FB8782",
+                "nameProfileId": "50000056",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "英格蘭足總盃",
+                "name_en": "FA Cup",
+                "sequence": "54.FA Cup                                                                                                                          .2026-05-19.000"
+            },
+            {
+                "id": "50061959",
+                "code": "UD1",
+                "frontEndId": "",
+                "nameProfileId": "51332682",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "烏拉圭甲組聯賽",
+                "name_en": "Uruguayan Division 1",
+                "sequence": "62.Uruguayan Division 1                                                                                                            .2026-06-03.000"
+            },
+            {
+                "id": "50035998",
+                "code": "SPLW",
+                "frontEndId": "",
+                "nameProfileId": "50662936",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "女子蘇格蘭超級聯賽",
+                "name_en": "Women Scottish Premier",
+                "sequence": "97.Women Scottish Premier                                                                                                          .2025-05-20.000"
+            },
+            {
+                "id": "50063214",
+                "code": "AQL",
+                "frontEndId": "",
+                "nameProfileId": "51334932",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "澳洲全國聯賽 - 昆士蘭",
+                "name_en": "Australian NPL - Queensland",
+                "sequence": "20.Australian NPL - Queensland                                                                                                     .2026-09-30.000"
+            },
+            {
+                "id": "50064371",
+                "code": "UCLF",
+                "frontEndId": "FB5119",
+                "nameProfileId": "50232587",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "歐聯決賽組合",
+                "name_en": "UCL Finalists",
+                "sequence": "99.UCL Finalists                                                                                                                   .2026-06-02.000"
+            },
+            {
+                "id": "50056019",
+                "code": "UPP",
+                "frontEndId": "FB8345",
+                "nameProfileId": "51104814",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "阿聯酋總統盃",
+                "name_en": "UAE President Cup",
+                "sequence": "51.UAE President Cup                                                                                                               .2026-06-08.000"
+            },
+            {
+                "id": "50063718",
+                "code": "ASCW",
+                "frontEndId": "FB4522",
+                "nameProfileId": "51349029",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "女子亞洲盃",
+                "name_en": "Women Asian Cup",
+                "sequence": "07.Women Asian Cup                                                                                                                 .2026-03-22.000"
+            },
+            {
+                "id": "50055985",
+                "code": "JLCW",
+                "frontEndId": "",
+                "nameProfileId": "50669737",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "女子日本聯賽盃",
+                "name_en": "Women Japanese League Cup",
+                "sequence": "22.Women Japanese League Cup                                                                                                       .2026-05-05.000"
+            },
+            {
+                "id": "50060946",
+                "code": "CD1",
+                "frontEndId": "",
+                "nameProfileId": "50000032",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "智利甲組聯賽",
+                "name_en": "Chilean Division 1",
+                "sequence": "62.Chilean Division 1                                                                                                              .2026-12-08.000"
+            },
+            {
+                "id": "50034443",
+                "code": "ISAW",
+                "frontEndId": "",
+                "nameProfileId": "50658617",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "女子意大利甲組聯賽",
+                "name_en": "Women Italian Division 1",
+                "sequence": "45.Women Italian Division 1                                                                                                        .2025-05-20.000"
+            },
+            {
+                "id": "50050517",
+                "code": "CUP",
+                "frontEndId": "",
+                "nameProfileId": "50000039",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "盃賽",
+                "name_en": "Cup Competition",
+                "sequence": "38.Cup Competition                                                                                                                 .2026-06-30.000"
+            },
+            {
+                "id": "50062705",
+                "code": "SWC",
+                "frontEndId": "",
+                "nameProfileId": "50000103",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "瑞典盃",
+                "name_en": "Swedish Cup",
+                "sequence": "73.Swedish Cup                                                                                                                     .2026-05-16.000"
+            },
+            {
+                "id": "50056200",
+                "code": "AD1W",
+                "frontEndId": "",
+                "nameProfileId": "50701007",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "女子澳洲職業聯賽",
+                "name_en": "Women Australian Division 1",
+                "sequence": "20.Women Australian Division 1                                                                                                     .2026-05-19.000"
+            },
+            {
+                "id": "50059205",
+                "code": "SFCW",
+                "frontEndId": "FB1457",
+                "nameProfileId": "50703847",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "女子西班牙盃",
+                "name_en": "Women Spanish Cup",
+                "sequence": "86.Women Spanish Cup                                                                                                               .2026-06-01.000"
+            },
+            {
+                "id": "50044559",
+                "code": "DACW",
+                "frontEndId": "",
+                "nameProfileId": "50736541",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "女子荷蘭盃",
+                "name_en": "Women Dutch Cup",
+                "sequence": "99.Women Dutch Cup                                                                                                                 .2025-05-13.000"
+            },
+            {
+                "id": "50056185",
+                "code": "SFC",
+                "frontEndId": "FB8699",
+                "nameProfileId": "50000099",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "西班牙盃",
+                "name_en": "Spanish Cup",
+                "sequence": "68.Spanish Cup                                                                                                                     .2026-05-25.000"
+            },
+            {
+                "id": "50054465",
+                "code": "UEF",
+                "frontEndId": "FB4508",
+                "nameProfileId": "50000113",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "歐洲協會聯賽",
+                "name_en": "UE Conference",
+                "sequence": "28.UE Conference                                                                                                                   .2026-06-01.000"
+            },
+            {
+                "id": "50052925",
+                "code": "SFLW",
+                "frontEndId": "",
+                "nameProfileId": "50662935",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "女子西班牙甲組聯賽",
+                "name_en": "Women Spanish Division 1",
+                "sequence": "85.Women Spanish Division 1                                                                                                        .2026-06-02.000"
+            },
+            {
+                "id": "50052151",
+                "code": "SDL",
+                "frontEndId": "",
+                "nameProfileId": "50630053",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "沙特職業聯賽",
+                "name_en": "Saudi Pro League",
+                "sequence": "48.Saudi Pro League                                                                                                                .2026-06-02.000"
+            },
+            {
+                "id": "50062497",
+                "code": "SAS",
+                "frontEndId": "FB4467",
+                "nameProfileId": "50000097",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "南美超級盃",
+                "name_en": "South American Super Cup",
+                "sequence": "33.South American Super Cup                                                                                                        .2026-02-28.000"
+            },
+            {
+                "id": "50049043",
+                "code": "ASQ",
+                "frontEndId": "",
+                "nameProfileId": "50000018",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "亞洲盃外圍賽",
+                "name_en": "Asian Cup Qualifiers",
+                "sequence": "35.Asian Cup Qualifiers                                                                                                            .2026-04-02.000"
+            },
+            {
+                "id": "50052660",
+                "code": "UCL",
+                "frontEndId": "FB5548",
+                "nameProfileId": "50000112",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "歐洲聯賽冠軍盃",
+                "name_en": "UE Champions",
+                "sequence": "11.UE Champions                                                                                                                    .2026-06-02.000"
+            },
+            {
+                "id": "50059200",
+                "code": "IFCW",
+                "frontEndId": "FB1446",
+                "nameProfileId": "50703843",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "女子意大利盃",
+                "name_en": "Women Italian Cup",
+                "sequence": "88.Women Italian Cup                                                                                                               .2026-05-26.000"
+            },
+            {
+                "id": "50035997",
+                "code": "SFLW",
+                "frontEndId": "",
+                "nameProfileId": "50662935",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "女子西班牙甲組聯賽",
+                "name_en": "Women Spanish Division 1",
+                "sequence": "44.Women Spanish Division 1                                                                                                        .2025-05-20.000"
+            },
+            {
+                "id": "50057384",
+                "code": "ACLW",
+                "frontEndId": "",
+                "nameProfileId": "50944049",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "女子亞冠盃",
+                "name_en": "Women Asian Champions League",
+                "sequence": "92.Women Asian Champions League                                                                                                    .2026-05-25.000"
+            },
+            {
+                "id": "50032628",
+                "code": "FF2",
+                "frontEndId": "",
+                "nameProfileId": "50000059",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "法國乙組聯賽",
+                "name_en": "French Division 2",
+                "sequence": "70.French Division 2                                                                                                               .2025-05-31.000"
+            },
+            {
+                "id": "50061459",
+                "code": "CNC",
+                "frontEndId": "FB3535",
+                "nameProfileId": "50000030",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "中北美洲冠軍盃",
+                "name_en": "CONCACAF Champions Cup",
+                "sequence": "34.CONCACAF Champions Cup                                                                                                          .2026-06-02.000"
+            },
+            {
+                "id": "50045208",
+                "code": "SAL",
+                "frontEndId": "",
+                "nameProfileId": "50000104",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "瑞典超級聯賽",
+                "name_en": "Swedish Division 1",
+                "sequence": "52.Swedish Division 1                                                                                                              .2025-11-30.000"
+            },
+            {
+                "id": "50061894",
+                "code": "JV2",
+                "frontEndId": "",
+                "nameProfileId": "51334930",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "日乙日丙百年構想聯賽",
+                "name_en": "J2 J3 100Y Vision League",
+                "sequence": "17.J2 J3 100Y Vision League                                                                                                        .2026-06-09.000"
+            },
+            {
+                "id": "50063585",
+                "code": "KD1",
+                "frontEndId": "",
+                "nameProfileId": "50000075",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "南韓職業聯賽",
+                "name_en": "Korean Division 1",
+                "sequence": "18.Korean Division 1                                                                                                               .2026-12-29.000"
+            },
+            {
+                "id": "50050424",
+                "code": "FFL",
+                "frontEndId": "FB3875",
+                "nameProfileId": "50000058",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "法國甲組聯賽",
+                "name_en": "French Division 1",
+                "sequence": "26.French Division 1                                                                                                               .2026-05-30.000"
+            },
+            {
+                "id": "50030464",
+                "code": "CLB",
+                "frontEndId": "",
+                "nameProfileId": "50000034",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "球會賽",
+                "name_en": "Club Matches",
+                "sequence": "20.Club Matches                                                                                                                    .2025-06-30.000"
+            },
+            {
+                "id": "50050481",
+                "code": "GD2",
+                "frontEndId": "FB3810",
+                "nameProfileId": "50000064",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "德國乙組聯賽",
+                "name_en": "German Division 2",
+                "sequence": "40.German Division 2                                                                                                               .2026-05-27.000"
+            },
+            {
+                "id": "50034767",
+                "code": "EPLW",
+                "frontEndId": "",
+                "nameProfileId": "50651728",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "女子英格蘭超級聯賽",
+                "name_en": "Women Eng Premier",
+                "sequence": "41.Women Eng Premier                                                                                                               .2025-05-13.000"
+            },
+            {
+                "id": "50032641",
+                "code": "SF2",
+                "frontEndId": "",
+                "nameProfileId": "50000101",
+                "isInteractiveServiceAvailable": true,
+                "name_ch": "西班牙乙組聯賽",
+                "name_en": "Spanish Division 2",
+                "sequence": "68.Spanish Division 2                                                                                                              .2025-07-01.000"
+            },
+            {
+                "id": "50044721",
+                "code": "RPLW",
+                "frontEndId": "",
+                "nameProfileId": "50855633",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "女子俄羅斯超級聯賽",
+                "name_en": "Women Russian Premier",
+                "sequence": "99.Women Russian Premier                                                                                                           .2025-11-10.000"
+            },
+            {
+                "id": "50062196",
+                "code": "BD1W",
+                "frontEndId": "",
+                "nameProfileId": "50736544",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "女子巴西甲組聯賽",
+                "name_en": "Women Brazilian Division 1",
+                "sequence": "99.Women Brazilian Division 1                                                                                                      .2026-11-03.000"
+            },
+            {
+                "id": "50045730",
+                "code": "FVL",
+                "frontEndId": "",
+                "nameProfileId": "50061277",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "芬蘭超級聯賽",
+                "name_en": "Finnish Division 1",
+                "sequence": "52.Finnish Division 1                                                                                                              .2025-11-30.000"
+            },
+            {
+                "id": "50036008",
+                "code": "DFLW",
+                "frontEndId": "",
+                "nameProfileId": "50671045",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "女子荷蘭甲組聯賽",
+                "name_en": "Women Dutch Division 1",
+                "sequence": "95.Women Dutch Division 1                                                                                                          .2025-05-20.000"
+            },
+            {
+                "id": "50031774",
+                "code": "SPL",
+                "frontEndId": "",
+                "nameProfileId": "50000095",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "蘇格蘭超級聯賽",
+                "name_en": "Scottish Premier",
+                "sequence": "65.Scottish Premier                                                                                                                .2025-05-30.000"
+            },
+            {
+                "id": "50050455",
+                "code": "ED2",
+                "frontEndId": "",
+                "nameProfileId": "50000047",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "英格蘭甲組聯賽",
+                "name_en": "Eng League 1",
+                "sequence": "66.Eng League 1                                                                                                                    .2026-05-27.000"
+            },
+            {
+                "id": "50051055",
+                "code": "JD1W",
+                "frontEndId": "",
+                "nameProfileId": "50651730",
+                "isInteractiveServiceAvailable": false,
+                "name_ch": "女子日本職業聯賽",
+                "name_en": "Women Japanese Division 1",
+                "sequence": "21.Women Japanese Division 1                                                                                                       .2026-05-19.000"
+            }
+        ]
+    }
+}

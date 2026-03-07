@@ -136,3 +136,61 @@ class TestReferenceDataReal:
 
         tourn_count = real_db.db["tournaments_ref"].count_documents({})
         assert tourn_count == len(TOURNAMENTS_DATA)
+
+    def test_seed_all_odds_types(self, real_db):
+        """Test seeding all 38 odds types from reference_data.py."""
+        odds_dicts = [ot.model_dump() for ot in ODDS_TYPES_DATA]
+        count = real_db.seed_odds_types(odds_dicts)
+        assert count == len(ODDS_TYPES_DATA)
+
+        # Verify a specific one
+        doc = real_db.db["odds_types_ref"].find_one({"code": "HAD"})
+        assert doc is not None
+        assert doc["name_en"] == "Home/Away/Draw"
+        assert doc["name_ch"] == "主客和"
+
+
+@pytest.mark.mongodb
+class TestTournamentOperationsReal:
+    """Integration tests for tournament operations with real MongoDB."""
+
+    def test_upsert_tournaments_from_sample(self, real_db):
+        """Test upserting tournaments from sample API data."""
+        import json
+        from pathlib import Path
+
+        sample_path = Path(__file__).parent.parent / "resources" / "match-list-res-1.json"
+        with open(sample_path) as f:
+            data = json.load(f)
+
+        tournaments = data["data"]["tournamentList"]
+        result = real_db.upsert_tournaments(tournaments)
+
+        assert result["inserted"] > 0
+        assert result["inserted"] == len(tournaments)
+
+        # Verify EPL exists
+        epl = real_db.get_tournament_by_code("EPL")
+        assert len(epl) > 0
+        assert epl[0]["name_en"] == "Eng Premier"
+
+    def test_upsert_tournaments_idempotent(self, real_db):
+        """Test that re-upserting same tournaments doesn't create duplicates."""
+        tournaments = [
+            {
+                "id": "50050013",
+                "code": "EPL",
+                "frontEndId": "FB3397",
+                "nameProfileId": "50000051",
+                "isInteractiveServiceAvailable": True,
+                "name_en": "Eng Premier",
+                "name_ch": "英格蘭超級聯賽",
+                "sequence": "",
+            },
+        ]
+        real_db.upsert_tournaments(tournaments)
+        result = real_db.upsert_tournaments(tournaments)
+        assert result["inserted"] == 0
+
+        total = real_db.db["tournaments_ref"].count_documents({})
+        assert total == 1

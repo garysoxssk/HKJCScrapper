@@ -203,8 +203,16 @@ Note: `POLL_INTERVAL_SECONDS` and `ODDS_TYPES` are no longer global — they are
 - Created pytest.ini with three markers: default (unit), `integration` (live API), `mongodb` (real MongoDB)
 - Unit tests use mongomock (no external dependencies needed)
 - MongoDB integration tests use `hkjc_test` database with auto-cleanup
-- **Test counts**: 70 unit tests + 8 mongodb integration + 4 API integration = 82 total
+- **Test counts**: 77 unit tests + 11 mongodb integration + 5 API integration = 93 total
 - All tests passing
+
+**Reference Data Enhancements - COMPLETE**
+- 38 odds types sourced from HKJC API description files (LB_FB_TITLE_ labels) with EN/CH translations
+- Tournament list fetched via GraphQL `tournamentList` query and stored in `tournaments_ref` collection
+- `send_tournament_list_request()` in client.py for fetching all tournaments
+- `upsert_tournaments()` in db.py - insert-if-new, update-if-exists (keyed by tournament ID)
+- `seed_odds_types()` in db.py for one-time odds type seeding
+- Documentation: `docs/odds_types.md` with full table of all supported odds types
 
 **Phase 7 (Rule-Based Scheduler) - NOT STARTED** <-- Start here
 - See `docs/project_plan.md` for full details and verification steps
@@ -233,10 +241,13 @@ Note: `POLL_INTERVAL_SECONDS` and `ODDS_TYPES` are no longer global — they are
 - **Scheduler redesign**: Two-layer architecture. Layer 1 (Discovery) runs periodically to find matches matching rules. Layer 2 (Fetch jobs) are scheduled at computed times using APScheduler date/interval triggers.
 - **MongoDB 8.2 installed locally**: Development uses local MongoDB 8.2. Design must support migration to cloud-hosted MongoDB (e.g. Atlas) later — connection string is already configurable via `MONGODB_URI` env var. Data migration will be needed when moving to cloud.
 - **Docs structure**: `docs/project_modules_high_level.md` = high-level 4-module roadmap. `docs/project_plan.md` = detailed Module I implementation phases with verification steps.
-- **Reference data system**: User requested enums/lookups for odds types and tournaments. Implemented as: (1) Python Enums in models.py for validation, (2) Pydantic reference models (OddsTypeReference, TournamentReference), (3) Seed data in reference_data.py with 18 odds types and 8 tournaments. Will be stored in MongoDB `odds_types_ref` and `tournaments_ref` collections for querying from dashboards/analytics.
+- **Reference data system**: Implemented as: (1) Python Enums in models.py for validation, (2) Pydantic reference models (OddsTypeReference, TournamentReference), (3) Seed data in reference_data.py with 38 odds types (from HKJC LB_FB_TITLE_ labels) and 8 tournaments. Stored in MongoDB `odds_types_ref` and `tournaments_ref` collections. Tournament data also auto-fetched from HKJC `tournamentList` GraphQL query and upserted by tournament ID.
 - **HKJC API Query Whitelisting Discovery**: Integration tests initially failed with "query isn't whitelisted" error. Discovered HKJC API doesn't accept arbitrary GraphQL queries - only specific pre-approved query structures. Solution: Use exact query format from real API request (see `resources/single-match-req-1.txt`), including ALL parameters defined in query signature even if passed as null/unused. The whitelisted query has ~13 parameters (startIndex, endIndex, startDate, endDate, matchIds, tournIds, fbOddsTypes, fbOddsTypesM, inplayOnly, featuredMatchesOnly, frontEndIds, earlySettlementOnly, showAllMatch). All client methods now use this single whitelisted query format.
 - **API Field Naming**: Initially assumed HKJC API used camelCase (nameEn, nameCh). Real API uses snake_case (name_en, name_ch) for most fields. Some fields like frontEndId, kickOffTime use camelCase. Models updated accordingly. Added new models: Venue, LiveEvent, NgsInfo, AgsInfo, Remark, AdminOperation to handle all fields in real API response.
 - **Real API Samples**: User provided actual API request/response samples in `resources/` directory (`single-match-req-1.txt`, `single-match-res-1.json`). These are the authoritative reference for query structure and response format. Integration tests now successfully fetch live data from HKJC API (tested with 81 matches).
 - **MongoDB Testing Strategy**: User chose "both approaches" for testing: (1) mongomock for unit tests (fast, no external dependency), (2) real MongoDB with `hkjc_test` database for integration tests (supports time-series collections, real indexes). Tests marked with `@pytest.mark.mongodb` for the real DB tests.
 - **Phase 6 MongoDB Implementation**: Implemented MongoDBClient with three collections. `odds_history` uses MongoDB time-series collection (timeField=fetchedAt, metaField=matchId, granularity=minutes). All timestamps stored as UTC. `save_matches()` does both match upsert and odds history append in one call. Reference data seeding uses upsert to be idempotent.
 - **Phase 6a CLI Implementation**: Watch rules CLI uses argparse with subcommands. Observation string format: `"ODDS:MODE:DETAILS"` where MODE is `event` or `continuous`. Example: `"HAD,HHA:event:before_kickoff:30"` means "fetch HAD and HHA odds 30 minutes before kickoff". CLI connects to MongoDB on each invocation (stateless).
+- **Odds Types from HKJC API**: Extracted 38 odds type translations from HKJC frontend `LB_FB_TITLE_` labels in `description-en-res.json` and `description-ch-res.json`. Includes standard, corner, goal scorer, extra time, and tournament special odds. Full table in `docs/odds_types.md`.
+- **Tournament List API**: HKJC has a separate `tournamentList` GraphQL query (whitelisted, no parameters needed) that returns all available tournaments with ID, code, name_en, name_ch. Stored in `tournaments_ref` collection keyed by tournament ID. Note: same tournament code (e.g., "EPL") can have multiple entries with different IDs (different seasons).
+- **Tournament Discovery**: `upsert_tournaments()` in db.py uses `$setOnInsert` for `createdAt` to only set on first insert, and `$set` for all other fields. This means existing tournaments get their names/metadata updated but retain their creation timestamp. Will be called as a scheduled discovery job in Phase 7.

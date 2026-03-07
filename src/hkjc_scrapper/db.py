@@ -377,3 +377,89 @@ class MongoDBClient:
             len(odds_types),
             len(tournaments),
         )
+
+    def seed_odds_types(self, odds_types: list[dict]) -> int:
+        """
+        Seed odds type reference data into odds_types_ref collection.
+
+        Uses upsert by code to avoid duplicates.
+
+        Args:
+            odds_types: List of odds type dicts with code, name_en, name_ch
+
+        Returns:
+            Number of odds types upserted
+        """
+        odds_ref = self.db["odds_types_ref"]
+        count = 0
+        for ot in odds_types:
+            odds_ref.replace_one({"code": ot["code"]}, ot, upsert=True)
+            count += 1
+
+        logger.info("Seeded %d odds types", count)
+        return count
+
+    # ========================================================================
+    # Tournament operations
+    # ========================================================================
+
+    def upsert_tournaments(self, tournaments: list[dict]) -> dict:
+        """
+        Upsert tournaments from the API tournamentList response.
+
+        Only inserts if the tournament ID doesn't exist. If it exists,
+        updates the name/code/metadata.
+
+        Args:
+            tournaments: List of tournament dicts from API
+                (id, code, frontEndId, name_en, name_ch, etc.)
+
+        Returns:
+            dict with counts: {"inserted": N, "updated": M}
+        """
+        tourn_coll = self.db["tournaments_ref"]
+        inserted = 0
+        updated = 0
+
+        for t in tournaments:
+            result = tourn_coll.update_one(
+                {"id": t["id"]},
+                {
+                    "$set": {
+                        "code": t.get("code", ""),
+                        "frontEndId": t.get("frontEndId", ""),
+                        "nameProfileId": t.get("nameProfileId", ""),
+                        "isInteractiveServiceAvailable": t.get("isInteractiveServiceAvailable", False),
+                        "name_en": t.get("name_en", ""),
+                        "name_ch": t.get("name_ch", ""),
+                        "sequence": t.get("sequence", ""),
+                        "updatedAt": datetime.now(timezone.utc),
+                    },
+                    "$setOnInsert": {
+                        "createdAt": datetime.now(timezone.utc),
+                    },
+                },
+                upsert=True,
+            )
+            if result.upserted_id:
+                inserted += 1
+            elif result.modified_count > 0:
+                updated += 1
+
+        logger.info(
+            "Tournaments: %d inserted, %d updated (of %d total)",
+            inserted, updated, len(tournaments),
+        )
+        return {"inserted": inserted, "updated": updated}
+
+    def get_tournament_by_id(self, tournament_id: str) -> Optional[dict]:
+        """Get a tournament by its ID."""
+        return self.db["tournaments_ref"].find_one({"id": tournament_id})
+
+    def get_tournament_by_code(self, code: str) -> list[dict]:
+        """Get tournaments by code (may return multiple with same code)."""
+        return list(self.db["tournaments_ref"].find({"code": code}))
+
+    def get_all_tournaments(self) -> list[dict]:
+        """Get all tournaments sorted by code."""
+        return list(self.db["tournaments_ref"].find().sort("code", 1))

@@ -87,3 +87,29 @@ def test_options_preflight():
 
     # OPTIONS should return 2xx status
     assert response.status_code in [200, 204]
+
+
+@pytest.mark.integration
+def test_fetch_tournament_list():
+    """Test fetching tournament list from live API."""
+    client = HKJCGraphQLClient(Settings())
+
+    response = client.send_tournament_list_request()
+
+    assert "data" in response
+    assert "tournamentList" in response["data"]
+
+    tournaments = response["data"]["tournamentList"]
+    assert isinstance(tournaments, list)
+    assert len(tournaments) > 0
+
+    # Verify structure
+    first = tournaments[0]
+    assert "id" in first
+    assert "code" in first
+    assert "name_en" in first
+    assert "name_ch" in first
+
+    print(f"\nFetched {len(tournaments)} tournaments")
+    for t in tournaments[:5]:
+        print(f"  {t['code']}: {t['name_en']} / {t['name_ch']}")
