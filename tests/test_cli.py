@@ -10,6 +10,8 @@ from hkjc_scrapper.cli import (
     cmd_disable_rule,
     cmd_enable_rule,
     cmd_fetch_match,
+    cmd_get_match,
+    cmd_get_odds,
     cmd_list_matches,
     cmd_list_rules,
     cmd_show_rule,
@@ -529,4 +531,211 @@ class TestCmdFetchMatch:
         mock_client = MagicMock()
         args = _FakeArgs(id="M1", front_end_id="", odds="", no_save=False)
         result = cmd_fetch_match(args, mock_db, mock_client)
+        assert result == 1
+
+
+# ============================================================================
+# get-match / get-odds tests (DB query commands)
+# ============================================================================
+
+class TestCmdGetMatch:
+    """Tests for get-match command (reads from DB)."""
+
+    def test_get_match_by_id(self, mock_db, sample_match, capsys):
+        """Test looking up a stored match by ID."""
+        mock_db.upsert_match(sample_match)
+
+        args = _FakeArgs(id=sample_match.id, front_end_id="", team="", tournament="")
+        result = cmd_get_match(args, mock_db)
+        assert result == 0
+
+        output = capsys.readouterr().out
+        assert "Manchester United" in output
+        assert "Liverpool" in output
+        assert "FB9999" in output
+
+    def test_get_match_by_front_end_id(self, mock_db, sample_match, capsys):
+        """Test looking up a stored match by front-end ID."""
+        mock_db.upsert_match(sample_match)
+
+        args = _FakeArgs(id="", front_end_id="FB9999", team="", tournament="")
+        result = cmd_get_match(args, mock_db)
+        assert result == 0
+
+        output = capsys.readouterr().out
+        assert "Manchester United" in output
+
+    def test_get_match_by_team_search(self, mock_db, sample_match, capsys):
+        """Test searching stored matches by team name."""
+        mock_db.upsert_match(sample_match)
+
+        args = _FakeArgs(id="", front_end_id="", team="manchester", tournament="")
+        result = cmd_get_match(args, mock_db)
+        assert result == 0
+
+        output = capsys.readouterr().out
+        assert "Manchester United" in output
+
+    def test_get_match_by_tournament(self, mock_db, sample_match, capsys):
+        """Test searching stored matches by tournament."""
+        mock_db.upsert_match(sample_match)
+
+        args = _FakeArgs(id="", front_end_id="", team="", tournament="EPL")
+        result = cmd_get_match(args, mock_db)
+        assert result == 0
+
+        output = capsys.readouterr().out
+        assert "EPL" in output
+
+    def test_get_match_not_found(self, mock_db, capsys):
+        """Test when match is not in DB."""
+        args = _FakeArgs(id="nonexistent", front_end_id="", team="", tournament="")
+        result = cmd_get_match(args, mock_db)
+        assert result == 1
+        assert "not found" in capsys.readouterr().out
+
+    def test_get_match_no_args(self, mock_db, capsys):
+        """Test error when no search criteria given."""
+        args = _FakeArgs(id="", front_end_id="", team="", tournament="")
+        result = cmd_get_match(args, mock_db)
+        assert result == 1
+
+
+class TestCmdGetOdds:
+    """Tests for get-odds command (reads odds history from DB)."""
+
+    def _seed_odds(self, mock_db, match_id="M1", odds_type="HAD", count=3):
+        """Seed some odds history records."""
+        from datetime import datetime, timedelta, timezone
+
+        # Also seed the match in matches_current
+        mock_db.matches_current.replace_one(
+            {"_id": match_id},
+            {
+                "_id": match_id,
+                "id": match_id,
+                "frontEndId": "FB001",
+                "kickOffTime": "2026-03-10T20:00:00.000+08:00",
+                "homeTeam": {"name_en": "Team A"},
+                "awayTeam": {"name_en": "Team B"},
+                "tournament": {"code": "EPL", "name_en": "Eng Premier"},
+                "status": "SCHEDULED",
+            },
+            upsert=True,
+        )
+        for i in range(count):
+            mock_db.odds_history.insert_one({
+                "matchId": match_id,
+                "matchDescription": "Team A vs Team B",
+                "oddsType": odds_type,
+                "inplay": i >= 2,
+                "lines": [{
+                    "lineId": "L1",
+                    "status": "SELLINGSTARTED",
+                    "condition": None,
+                    "main": True,
+                    "combinations": [{
+                        "combId": "C1", "str": "H",
+                        "currentOdds": f"{2.50 + i * 0.1:.2f}",
+                        "status": "AVAILABLE",
+                    }],
+                }],
+                "fetchedAt": datetime(2026, 3, 10, 10 + i, 0, 0, tzinfo=timezone.utc),
+            })
+
+    def test_get_odds_latest(self, mock_db, capsys):
+        """Test default mode (latest snapshot per type)."""
+        self._seed_odds(mock_db, "M1", "HAD", 3)
+        self._seed_odds(mock_db, "M1", "CHL", 2)
+
+        args = _FakeArgs(
+            id="M1", front_end_id="", odds="",
+            latest=True, before_kickoff=False, all=False, last=0,
+        )
+        result = cmd_get_odds(args, mock_db)
+        assert result == 0
+
+        output = capsys.readouterr().out
+        assert "Latest snapshot" in output
+        assert "HAD" in output
+        assert "CHL" in output
+
+    def test_get_odds_filter_by_type(self, mock_db, capsys):
+        """Test filtering by odds type."""
+        self._seed_odds(mock_db, "M1", "HAD", 3)
+        self._seed_odds(mock_db, "M1", "CHL", 2)
+
+        args = _FakeArgs(
+            id="M1", front_end_id="", odds="HAD",
+            latest=True, before_kickoff=False, all=False, last=0,
+        )
+        result = cmd_get_odds(args, mock_db)
+        assert result == 0
+
+        output = capsys.readouterr().out
+        assert "HAD" in output
+
+    def test_get_odds_all_mode(self, mock_db, capsys):
+        """Test --all mode shows all snapshots."""
+        self._seed_odds(mock_db, "M1", "HAD", 3)
+
+        args = _FakeArgs(
+            id="M1", front_end_id="", odds="HAD",
+            latest=False, before_kickoff=False, all=True, last=0,
+        )
+        result = cmd_get_odds(args, mock_db)
+        assert result == 0
+
+        output = capsys.readouterr().out
+        assert "All snapshots (3 records)" in output
+
+    def test_get_odds_last_n(self, mock_db, capsys):
+        """Test --last N shows last N snapshots."""
+        self._seed_odds(mock_db, "M1", "HAD", 5)
+
+        args = _FakeArgs(
+            id="M1", front_end_id="", odds="HAD",
+            latest=False, before_kickoff=False, all=False, last=2,
+        )
+        result = cmd_get_odds(args, mock_db)
+        assert result == 0
+
+        output = capsys.readouterr().out
+        assert "Last 2 snapshot" in output
+
+    def test_get_odds_no_history(self, mock_db, capsys):
+        """Test when match has no odds history."""
+        mock_db.matches_current.replace_one(
+            {"_id": "M1"},
+            {"_id": "M1", "frontEndId": "FB001", "kickOffTime": "2026-03-10T20:00:00.000+08:00",
+             "homeTeam": {"name_en": "A"}, "awayTeam": {"name_en": "B"},
+             "tournament": {"code": "EPL"}, "status": "SCHEDULED"},
+            upsert=True,
+        )
+        args = _FakeArgs(
+            id="M1", front_end_id="", odds="",
+            latest=True, before_kickoff=False, all=False, last=0,
+        )
+        result = cmd_get_odds(args, mock_db)
+        assert result == 0
+        assert "No odds history" in capsys.readouterr().out
+
+    def test_get_odds_by_front_end_id(self, mock_db, capsys):
+        """Test resolving match by front-end ID."""
+        self._seed_odds(mock_db, "M1", "HAD", 1)
+
+        args = _FakeArgs(
+            id="", front_end_id="FB001", odds="",
+            latest=True, before_kickoff=False, all=False, last=0,
+        )
+        result = cmd_get_odds(args, mock_db)
+        assert result == 0
+
+    def test_get_odds_no_id(self, mock_db, capsys):
+        """Test error when no ID provided."""
+        args = _FakeArgs(
+            id="", front_end_id="", odds="",
+            latest=True, before_kickoff=False, all=False, last=0,
+        )
+        result = cmd_get_odds(args, mock_db)
         assert result == 1

@@ -361,6 +361,244 @@ def cmd_fetch_match(args, db: MongoDBClient, client: HKJCGraphQLClient) -> int:
     return 0
 
 
+# ============================================================================
+# Database query commands
+# ============================================================================
+
+def cmd_get_match(args, db: MongoDBClient) -> int:
+    """Handle get-match command: look up a stored match from DB."""
+    # Find the match
+    doc = None
+    if args.id:
+        doc = db.get_match(args.id)
+    elif args.front_end_id:
+        doc = db.get_match_by_front_end_id(args.front_end_id)
+    elif args.team or args.tournament:
+        results = db.search_matches(
+            team=args.team or None,
+            tournament=args.tournament or None,
+        )
+        if not results:
+            print("No stored matches found matching filters.")
+            return 1
+        # Print summary table for multiple results
+        print(
+            f"\n{'ID':<12} {'FrontEndId':<12} {'Tournament':<8} "
+            f"{'Home':<22} {'Away':<22} {'Kickoff':<18} {'Status'}"
+        )
+        print("-" * 110)
+        for m in results:
+            ko = m.get("kickOffTime", "")[:16].replace("T", " ")
+            print(
+                f"{m.get('id',''):<12} {m.get('frontEndId',''):<12} "
+                f"{m.get('tournament',{}).get('code',''):<8} "
+                f"{m.get('homeTeam',{}).get('name_en',''):<22} "
+                f"{m.get('awayTeam',{}).get('name_en',''):<22} "
+                f"{ko:<18} {m.get('status','')}"
+            )
+        print(f"\n{len(results)} matches found in DB")
+        return 0
+    else:
+        print("Error: provide --id, --front-end-id, --team, or --tournament")
+        return 1
+
+    if doc is None:
+        identifier = args.id or args.front_end_id
+        print(f"Match '{identifier}' not found in database.")
+        return 1
+
+    _print_match_detail(doc)
+    return 0
+
+
+def cmd_get_odds(args, db: MongoDBClient) -> int:
+    """Handle get-odds command: query stored odds history from DB."""
+    # Resolve match ID
+    match_id = args.id
+    if not match_id and args.front_end_id:
+        doc = db.get_match_by_front_end_id(args.front_end_id)
+        if doc:
+            match_id = doc["_id"]
+        else:
+            print(f"Match '{args.front_end_id}' not found in database.")
+            return 1
+    if not match_id:
+        print("Error: provide --id or --front-end-id")
+        return 1
+
+    # Get match info for header
+    match_doc = db.get_match(match_id)
+    if match_doc:
+        home = match_doc.get("homeTeam", {}).get("name_en", "?")
+        away = match_doc.get("awayTeam", {}).get("name_en", "?")
+        kickoff = match_doc.get("kickOffTime", "")[:16].replace("T", " ")
+        feid = match_doc.get("frontEndId", "?")
+        print(f"\nMatch: {feid} ({match_id})")
+        print(f"  {home} vs {away}")
+        print(f"  Kickoff: {kickoff}")
+    else:
+        print(f"\nMatch ID: {match_id} (not in matches_current)")
+
+    # Parse odds type filter
+    odds_type_filter = args.odds.upper() if args.odds else None
+
+    # Show available odds types if none recorded
+    available_types = db.get_odds_distinct_types(match_id)
+    if not available_types:
+        print("\n  No odds history recorded for this match.")
+        return 0
+
+    print(f"  Recorded odds types: {', '.join(sorted(available_types))}")
+
+    # Determine time filter
+    if args.all:
+        # All snapshots
+        history = db.get_odds_history(match_id, odds_type=odds_type_filter)
+        if not history:
+            print(f"\n  No odds history found" + (f" for {odds_type_filter}" if odds_type_filter else "") + ".")
+            return 0
+        print(f"\n  All snapshots ({len(history)} records):")
+        print(f"  {'Time (UTC)':<22} {'Type':<6} {'Inplay':<8} Main Line Odds")
+        print("  " + "-" * 80)
+        for snap in history:
+            _print_odds_snapshot_row(snap)
+
+    elif args.before_kickoff:
+        # Last snapshot before kickoff
+        if not match_doc:
+            print("  Cannot determine kickoff time (match not in DB).")
+            return 1
+        from hkjc_scrapper.scheduler import parse_kickoff_time
+        try:
+            kickoff_dt = parse_kickoff_time(match_doc["kickOffTime"])
+        except (ValueError, KeyError):
+            print("  Cannot parse kickoff time.")
+            return 1
+
+        history = db.get_odds_history(
+            match_id, odds_type=odds_type_filter, end_time=kickoff_dt
+        )
+        if not history:
+            print(f"\n  No pre-kickoff odds found" + (f" for {odds_type_filter}" if odds_type_filter else "") + ".")
+            return 0
+
+        # Group by odds type and take last per type
+        by_type: dict[str, dict] = {}
+        for snap in history:
+            by_type[snap["oddsType"]] = snap  # last one wins (sorted asc)
+
+        print(f"\n  Last snapshot before kickoff:")
+        print(f"  {'Time (UTC)':<22} {'Type':<6} {'Inplay':<8} Main Line Odds")
+        print("  " + "-" * 80)
+        for snap in sorted(by_type.values(), key=lambda s: s["oddsType"]):
+            _print_odds_snapshot_row(snap)
+
+    elif args.last:
+        # Last N snapshots
+        n = args.last
+        history = db.get_odds_history(match_id, odds_type=odds_type_filter)
+        if not history:
+            print(f"\n  No odds history found.")
+            return 0
+        history = history[-n:]
+        print(f"\n  Last {len(history)} snapshot(s):")
+        print(f"  {'Time (UTC)':<22} {'Type':<6} {'Inplay':<8} Main Line Odds")
+        print("  " + "-" * 80)
+        for snap in history:
+            _print_odds_snapshot_row(snap)
+
+    else:
+        # Default: latest per odds type
+        snapshots = db.get_latest_odds(match_id, odds_type=odds_type_filter)
+        if not snapshots:
+            print(f"\n  No odds history found" + (f" for {odds_type_filter}" if odds_type_filter else "") + ".")
+            return 0
+        print(f"\n  Latest snapshot per odds type:")
+        print(f"  {'Time (UTC)':<22} {'Type':<6} {'Inplay':<8} Main Line Odds")
+        print("  " + "-" * 80)
+        for snap in snapshots:
+            _print_odds_snapshot_row(snap)
+
+    return 0
+
+
+def _print_odds_snapshot_row(snap: dict) -> None:
+    """Print a single odds snapshot as a table row."""
+    fetched = snap.get("fetchedAt")
+    time_str = fetched.strftime("%Y-%m-%d %H:%M:%S") if fetched else "?"
+    odds_type = snap.get("oddsType", "?")
+    inplay = "Yes" if snap.get("inplay") else "No"
+
+    # Extract main line odds
+    main_odds = ""
+    for line in snap.get("lines", []):
+        if line.get("main"):
+            parts = []
+            condition = line.get("condition")
+            if condition:
+                parts.append(f"[{condition}]")
+            for comb in line.get("combinations", []):
+                parts.append(f"{comb.get('str', '?')}={comb.get('currentOdds', '?')}")
+            main_odds = " ".join(parts)
+            break
+
+    if not main_odds and snap.get("lines"):
+        # No main line, show first line
+        first_line = snap["lines"][0]
+        parts = []
+        condition = first_line.get("condition")
+        if condition:
+            parts.append(f"[{condition}]")
+        for comb in first_line.get("combinations", []):
+            parts.append(f"{comb.get('str', '?')}={comb.get('currentOdds', '?')}")
+        main_odds = " ".join(parts)
+
+    print(f"  {time_str:<22} {odds_type:<6} {inplay:<8} {main_odds}")
+
+
+def _print_match_detail(doc: dict) -> None:
+    """Print detailed stored match information."""
+    print(f"\nMatch: {doc.get('frontEndId', '?')} ({doc.get('_id', doc.get('id', '?'))})")
+    print(f"  {doc.get('homeTeam', {}).get('name_en', '?')} vs {doc.get('awayTeam', {}).get('name_en', '?')}")
+    t = doc.get("tournament", {})
+    print(f"  Tournament: {t.get('name_en', '?')} ({t.get('code', '?')})")
+    print(f"  Kickoff: {doc.get('kickOffTime', '?')[:16].replace('T', ' ')}")
+    print(f"  Status: {doc.get('status', '?')}")
+
+    rr = doc.get("runningResult")
+    if rr and rr.get("homeScore") is not None:
+        print(f"  Score: {rr.get('homeScore', '?')}-{rr.get('awayScore', '?')}")
+        if rr.get("corner") is not None:
+            print(f"  Corners: {rr.get('corner')} (H:{rr.get('homeCorner', '?')} A:{rr.get('awayCorner', '?')})")
+
+    pi = doc.get("poolInfo")
+    if pi:
+        selling = pi.get("sellingPools", [])
+        if selling:
+            print(f"  Selling pools: {', '.join(selling)}")
+
+    pools = doc.get("foPools", [])
+    if pools:
+        print(f"  Stored odds ({len(pools)} pools):")
+        for pool in pools:
+            line_count = len(pool.get("lines", []))
+            print(f"    {pool.get('oddsType', '?')}: {line_count} lines ({pool.get('status', '?')})")
+            for ln in pool.get("lines", []):
+                if ln.get("main"):
+                    parts = []
+                    cond = ln.get("condition")
+                    if cond:
+                        parts.append(f"[{cond}]")
+                    for c in ln.get("combinations", []):
+                        parts.append(f"{c.get('str', '?')}={c.get('currentOdds', '?')}")
+                    print(f"      Main: {' '.join(parts)}")
+                    break
+
+    fetched = doc.get("fetchedAt")
+    if fetched:
+        print(f"  Last fetched: {fetched.strftime('%Y-%m-%d %H:%M:%S') if hasattr(fetched, 'strftime') else fetched}")
+
+
 def _print_rule_detail(doc: dict) -> None:
     """Print detailed rule information."""
     print(f"\n  Rule: {doc['name']}")
@@ -454,6 +692,27 @@ def build_parser() -> argparse.ArgumentParser:
     fm_parser.add_argument("--odds", default="", help="Comma-separated odds types (e.g., HAD,HHA,HDC)")
     fm_parser.add_argument("--no-save", action="store_true", help="Display only, don't save to DB")
 
+    # get-match (DB query)
+    gm_parser = subparsers.add_parser(
+        "get-match", help="Look up a stored match from DB"
+    )
+    gm_parser.add_argument("--id", default="", help="Match ID")
+    gm_parser.add_argument("--front-end-id", default="", help="Front-end match ID (e.g., FB4233)")
+    gm_parser.add_argument("--team", default="", help="Search by team name (partial)")
+    gm_parser.add_argument("--tournament", default="", help="Filter by tournament code")
+
+    # get-odds (DB query)
+    go_parser = subparsers.add_parser(
+        "get-odds", help="Query stored odds history from DB"
+    )
+    go_parser.add_argument("--id", default="", help="Match ID")
+    go_parser.add_argument("--front-end-id", default="", help="Front-end match ID")
+    go_parser.add_argument("--odds", default="", help="Filter by odds type (e.g., HAD)")
+    go_parser.add_argument("--latest", action="store_true", default=True, help="Latest snapshot per type (default)")
+    go_parser.add_argument("--before-kickoff", action="store_true", help="Last snapshot before kickoff")
+    go_parser.add_argument("--all", action="store_true", help="Show all snapshots (time series)")
+    go_parser.add_argument("--last", type=int, default=0, help="Show last N snapshots")
+
     return parser
 
 
@@ -478,6 +737,8 @@ def main(argv: list[str] | None = None) -> int:
         "enable-rule": cmd_enable_rule,
         "disable-rule": cmd_disable_rule,
         "delete-rule": cmd_delete_rule,
+        "get-match": cmd_get_match,
+        "get-odds": cmd_get_odds,
     }
 
     # Commands that need both db and client (ad-hoc API calls)

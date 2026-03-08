@@ -185,7 +185,7 @@ class MongoDBClient:
 
     def get_match(self, match_id: str) -> Optional[dict]:
         """
-        Retrieve a match from matches_current.
+        Retrieve a match from matches_current by internal ID.
 
         Args:
             match_id: Match ID
@@ -194,6 +194,46 @@ class MongoDBClient:
             Match document dict or None
         """
         return self.matches_current.find_one({"_id": match_id})
+
+    def get_match_by_front_end_id(self, front_end_id: str) -> Optional[dict]:
+        """Retrieve a match by its front-end ID (e.g., FB4233)."""
+        return self.matches_current.find_one({"frontEndId": front_end_id})
+
+    def search_matches(
+        self,
+        team: str | None = None,
+        tournament: str | None = None,
+        status: str | None = None,
+    ) -> list[dict]:
+        """
+        Search stored matches with optional filters.
+
+        Args:
+            team: Partial team name match (case-insensitive)
+            tournament: Tournament code (exact match)
+            status: Match status (exact match)
+
+        Returns:
+            List of match documents
+        """
+        query: dict = {}
+        if tournament:
+            query["tournament.code"] = tournament.upper()
+        if status:
+            query["status"] = status.upper()
+
+        results = list(self.matches_current.find(query))
+
+        # Apply team filter in Python (regex-like partial match)
+        if team:
+            term = team.lower()
+            results = [
+                m for m in results
+                if term in m.get("homeTeam", {}).get("name_en", "").lower()
+                or term in m.get("awayTeam", {}).get("name_en", "").lower()
+            ]
+
+        return results
 
     def get_odds_history(
         self,
@@ -230,6 +270,41 @@ class MongoDBClient:
         return list(
             self.odds_history.find(query).sort("fetchedAt", 1)
         )
+
+    def get_latest_odds(
+        self,
+        match_id: str,
+        odds_type: Optional[str] = None,
+    ) -> list[dict]:
+        """
+        Get the most recent odds snapshot(s) for a match.
+
+        If odds_type is specified, returns the latest snapshot for that type.
+        Otherwise returns the latest snapshot for each odds type.
+
+        Returns:
+            List of the latest odds document(s)
+        """
+        pipeline: list[dict] = [{"$match": {"matchId": match_id}}]
+
+        if odds_type:
+            pipeline[0]["$match"]["oddsType"] = odds_type
+
+        pipeline.extend([
+            {"$sort": {"fetchedAt": -1}},
+            {"$group": {
+                "_id": "$oddsType",
+                "doc": {"$first": "$$ROOT"},
+            }},
+            {"$replaceRoot": {"newRoot": "$doc"}},
+            {"$sort": {"oddsType": 1}},
+        ])
+
+        return list(self.odds_history.aggregate(pipeline))
+
+    def get_odds_distinct_types(self, match_id: str) -> list[str]:
+        """Get distinct odds types recorded for a match."""
+        return self.odds_history.distinct("oddsType", {"matchId": match_id})
 
     # ========================================================================
     # Watch rule operations

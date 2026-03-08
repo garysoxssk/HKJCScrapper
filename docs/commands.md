@@ -183,6 +183,107 @@ uv run python -m hkjc_scrapper.cli fetch-match --id 50062141 --odds HAD,HHA,HDC,
 
 ---
 
+## Querying Stored Data
+
+### Get Match (from DB)
+
+Look up match details already stored in MongoDB (no API call).
+
+```bash
+# By match ID
+uv run python -m hkjc_scrapper.cli get-match --id 50062141
+
+# By front-end ID
+uv run python -m hkjc_scrapper.cli get-match --front-end-id FB4233
+
+# Search by team name (lists all matching stored matches)
+uv run python -m hkjc_scrapper.cli get-match --team liverpool
+
+# Search by tournament
+uv run python -m hkjc_scrapper.cli get-match --tournament EPL
+```
+
+Example output (single match):
+```
+Match: FB4233 (50062141)
+  Nottingham Forest vs Liverpool
+  Tournament: Eng Premier (EPL)
+  Kickoff: 2026-02-22 22:00
+  Status: FIRSTHALF
+  Score: 0-1
+  Corners: 5 (H:3 A:2)
+  Selling pools: HAD, HHA, HDC, HIL, CHL
+  Stored odds (3 pools):
+    HAD: 1 lines (SELLINGSTARTED)
+      Main: H=2.50 D=3.20 A=2.80
+    HHA: 2 lines (SELLINGSTARTED)
+      Main: [-1.0] H=1.90 D=3.40 A=3.60
+  Last fetched: 2026-02-22 14:00:00
+```
+
+### Get Odds History (from DB)
+
+Query the odds time-series data stored in `odds_history`. Multiple display modes.
+
+```bash
+# Latest snapshot per odds type (default)
+uv run python -m hkjc_scrapper.cli get-odds --id 50062141
+
+# Latest snapshot for specific odds type
+uv run python -m hkjc_scrapper.cli get-odds --id 50062141 --odds HAD
+
+# Last snapshot before kickoff (pre-match odds)
+uv run python -m hkjc_scrapper.cli get-odds --id 50062141 --odds HAD --before-kickoff
+
+# All snapshots (full time series - see odds movement)
+uv run python -m hkjc_scrapper.cli get-odds --id 50062141 --odds HAD --all
+
+# Last N snapshots
+uv run python -m hkjc_scrapper.cli get-odds --id 50062141 --odds HAD --last 5
+
+# By front-end ID
+uv run python -m hkjc_scrapper.cli get-odds --front-end-id FB4233 --odds HHA --all
+```
+
+Example output (`--all` mode):
+```
+Match: FB4233 (50062141)
+  Nottingham Forest vs Liverpool
+  Kickoff: 2026-02-22 22:00
+  Recorded odds types: CHL, HAD, HHA
+
+  All snapshots (6 records):
+  Time (UTC)             Type   Inplay   Main Line Odds
+  --------------------------------------------------------------------------------
+  2026-02-22 11:30:00    HAD    No       H=2.50 D=3.20 A=2.80
+  2026-02-22 13:00:00    HAD    No       H=2.45 D=3.30 A=2.85
+  2026-02-22 14:00:00    HAD    Yes      H=2.10 D=3.50 A=3.20
+  2026-02-22 14:15:00    HAD    Yes      H=1.80 D=3.80 A=3.60
+  2026-02-22 14:30:00    HAD    Yes      H=1.55 D=4.00 A=4.20
+  2026-02-22 14:45:00    HAD    Yes      H=1.40 D=4.50 A=5.00
+```
+
+### Typical Query Workflow
+
+```bash
+# Step 1: What matches do I have stored?
+uv run python -m hkjc_scrapper.cli get-match --tournament EPL
+
+# Step 2: Look at a specific match
+uv run python -m hkjc_scrapper.cli get-match --id 50062141
+
+# Step 3: What odds types were recorded?
+uv run python -m hkjc_scrapper.cli get-odds --id 50062141
+
+# Step 4: See how HAD odds moved over time
+uv run python -m hkjc_scrapper.cli get-odds --id 50062141 --odds HAD --all
+
+# Step 5: What were the pre-match odds?
+uv run python -m hkjc_scrapper.cli get-odds --id 50062141 --before-kickoff
+```
+
+---
+
 ## One-Time Data Seeding
 
 ### Seed Odds Types (38 types with EN/CH translations)
