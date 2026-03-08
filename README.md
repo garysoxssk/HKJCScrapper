@@ -71,27 +71,82 @@ Optionally automates bet placement on HKJC using Playwright + stealth mode. **No
 - **Reference Data**: Built-in lookups for 18 odds types (HAD, CHL, HDC, etc.) and 8 tournaments (EPL, LLG, UCL, etc.)
 - **Match Alignment**: Cross-module matching via team names + kickoff time for integrating HKJC and 3rd party data
 
-## Installation
+## Quick Start (Docker)
+
+The fastest way to get everything running. Requires [Docker](https://docs.docker.com/get-docker/) and Docker Compose.
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd HKJCScrapper
+
+# Start MongoDB + scrapper service
+docker compose up -d
+
+# Check status
+docker compose ps
+docker compose logs -f scrapper
+
+# Add a watch rule (via the running container)
+docker compose exec scrapper uv run python -m hkjc_scrapper.cli add-rule \
+  --name "EPL HAD" --tournaments "EPL" \
+  --observation "HAD,HHA:event:before_kickoff:30"
+
+# Run a one-shot fetch
+docker compose run --rm scrapper uv run python -m hkjc_scrapper.main --once
+
+# Seed reference data (odds types)
+docker compose exec scrapper uv run python -c "
+from hkjc_scrapper.config import Settings
+from hkjc_scrapper.db import MongoDBClient
+from hkjc_scrapper.reference_data import ODDS_TYPES_DATA
+db = MongoDBClient(Settings().MONGODB_URI, Settings().MONGODB_DATABASE)
+db.seed_odds_types([ot.model_dump() for ot in ODDS_TYPES_DATA])
+db.close()
+"
+
+# Check data in MongoDB
+docker compose exec mongodb mongosh hkjc --quiet --eval "
+print('matches:', db.matches_current.countDocuments({}));
+print('odds_history:', db.odds_history.countDocuments({}));
+print('watch_rules:', db.watch_rules.countDocuments({}));
+print('tournaments:', db.tournaments_ref.countDocuments({}));
+"
+
+# Stop everything (data persists in Docker volume)
+docker compose down
+
+# Stop and delete all data
+docker compose down -v
+```
+
+### Environment Variables
+
+Override in `docker-compose.yml` under `scrapper.environment`:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MONGODB_URI` | `mongodb://mongodb:27017` | MongoDB connection (use `mongodb` hostname inside Docker) |
+| `MONGODB_DATABASE` | `hkjc` | Database name |
+| `DISCOVERY_INTERVAL_SECONDS` | `900` | Discovery job interval (seconds) |
+| `LOG_LEVEL` | `INFO` | Logging level |
+
+## Local Development (without Docker)
 
 ```bash
 # Install uv (if not already installed)
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Clone the repository
+# Clone and install
 git clone <repository-url>
 cd HKJCScrapper
-
-# Install dependencies
 uv sync
 
 # Copy environment template
 cp .env.example .env
 # Edit .env with your MongoDB URI and other settings
-```
 
-## Usage
-
-```bash
+# Requires a running MongoDB instance (local or remote)
 # Run the bot (service mode)
 uv run python -m hkjc_scrapper.main
 
@@ -100,16 +155,27 @@ uv run python -m hkjc_scrapper.main --once
 
 # Manage watch rules
 uv run python -m hkjc_scrapper.cli list-rules
-uv run python -m hkjc_scrapper.cli add-rule --name "Man Utd EPL" \
-  --teams "Manchester United" --tournaments "EPL" \
+uv run python -m hkjc_scrapper.cli add-rule --name "EPL HAD" \
+  --tournaments "EPL" \
   --observation "HAD,HHA:event:before_kickoff:30"
 
+# Browse live matches and fetch ad-hoc
+uv run python -m hkjc_scrapper.cli list-matches --tournament EPL
+uv run python -m hkjc_scrapper.cli fetch-match --id 50062141 --odds HAD,HHA
+
+# Query stored data
+uv run python -m hkjc_scrapper.cli get-match --tournament EPL
+uv run python -m hkjc_scrapper.cli get-odds --id 50062141 --odds HAD --all
+
 # Run tests
-uv run pytest tests/ -v
+uv run pytest
 ```
 
 ## Documentation
 
+- **Command reference**: `docs/commands.md`
+- **Database schema**: `docs/database.md`
+- **Odds type reference**: `docs/odds_types.md`
 - **High-level overview**: `docs/project_modules_high_level.md`
 - **Detailed implementation plan**: `docs/project_plan.md`
 - **AI agent context**: `CLAUDE.md`
@@ -129,7 +195,7 @@ uv run pytest tests/ -v
 | 7 | Rule-based scheduler | ✅ Complete |
 | 8 | Entry point | ✅ Complete |
 | 9 | Testing (extended) | ⏳ Pending |
-| 10 | Docker deployment | ⏳ Pending |
+| 10 | Docker deployment | ✅ Complete |
 
 ### Test Summary
 

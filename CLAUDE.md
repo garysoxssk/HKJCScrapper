@@ -233,7 +233,14 @@ Note: `POLL_INTERVAL_SECONDS` and `ODDS_TYPES` are no longer global — they are
 - Startup info logging: MongoDB URI, endpoint, mode, active rule count
 - `__main__.py` for `python -m hkjc_scrapper` support
 
-**Phases 9-10** - See `docs/project_plan.md` for full details and verification steps for each phase.
+**Phase 10 (Docker Deployment) - COMPLETE**
+- `Dockerfile` using `python:3.13-slim` + uv from `ghcr.io/astral-sh/uv:latest`
+- `docker-compose.yml` with MongoDB 8 + scrapper service
+- MongoDB health check, volume persistence, proper service dependency
+- Tested: both containers start, scrapper connects to MongoDB, discovery runs, 134 tournaments fetched
+- `.dockerignore` excludes tests, docs, IDE files from production image
+
+**Phase 9 (Extended Testing)** - See `docs/project_plan.md` for details.
 
 ## Coding Conventions
 
@@ -270,3 +277,5 @@ Note: `POLL_INTERVAL_SECONDS` and `ODDS_TYPES` are no longer global — they are
 - **Phase 7 Scheduler Implementation**: Two-layer `MatchScheduler` class. Layer 1 (Discovery) runs every `DISCOVERY_INTERVAL_SECONDS`, fetches basic match list, evaluates watch rules, computes absolute trigger times from kickoff + trigger event, and schedules APScheduler jobs. Layer 2 (Fetch) executes at scheduled times: calls API with specific odds types, finds the target match in response, saves to DB. Key design decisions: (1) Dedup via `_scheduled_keys` set prevents duplicate scheduling, (2) Past triggers are silently skipped, (3) Continuous mode adjusts start_time to `now` if already past, (4) fulltime estimated as kickoff + 105min (90min + 15min buffer).
 - **Phase 8 Entry Point**: `main.py` uses argparse with `--once` flag. Service mode sets up SIGINT/SIGTERM handlers and blocks on `scheduler.wait()`. Single-fetch mode (`run_once`) collects all odds types across all matched rules, makes one API call with all needed odds types, filters to matched matches, and saves. This minimizes API calls in one-shot mode.
 - **Milestone 2 Reached**: Full rule-based pipeline running end-to-end: watch rules -> discovery -> scheduled fetches -> MongoDB storage. Can run as service or single-shot.
+- **Phase 10 Docker**: Dockerfile uses multi-step uv install for layer caching (deps first, then source). `docker-compose.yml` uses `mongo:8` with health check — scrapper waits for MongoDB to be healthy before starting. Data persists in `mongodb_data` Docker volume. CLI commands work via `docker compose exec scrapper uv run python -m hkjc_scrapper.cli ...`.
+- **Ad-hoc CLI Commands**: Added `list-matches` (browse live matches from API), `fetch-match` (fetch + save specific match odds), `get-match` (query stored match from DB), `get-odds` (query odds history with time filters: `--latest`, `--before-kickoff`, `--all`, `--last N`). Total CLI commands: 10. Total unit tests: 121.

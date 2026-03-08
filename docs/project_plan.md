@@ -483,29 +483,30 @@ uv run pytest tests/ -v
 
 ---
 
-## Phase 10 - Polish & Deployment
+## Phase 10 - Polish & Deployment [COMPLETE]
 
-- [ ] Add `Dockerfile` for containerized deployment
-- [ ] Add `docker-compose.yml` with MongoDB + scrapper services
-- [ ] Verify end-to-end: start service -> rules evaluated -> data fetched on schedule -> verify in MongoDB
+- [x] Add `Dockerfile` for containerized deployment
+- [x] Add `docker-compose.yml` with MongoDB + scrapper services
+- [x] Verify end-to-end: start service -> rules evaluated -> data fetched on schedule -> verify in MongoDB
 
 ### Verification
 ```bash
 # 1. Build and start with docker-compose
-docker-compose up --build -d
+docker compose up -d
 
 # 2. Check both containers are running
-docker-compose ps
+docker compose ps
 
 # 3. Check logs
-docker-compose logs -f scrapper
+docker compose logs -f scrapper
 # Expected: discovery loop running, fetch jobs executing on schedule
 
 # 4. Verify data in MongoDB
-docker-compose exec mongo mongosh hkjc --eval "
+docker compose exec mongodb mongosh hkjc --quiet --eval "
   print('matches_current:', db.matches_current.countDocuments({}));
   print('odds_history:', db.odds_history.countDocuments({}));
   print('watch_rules:', db.watch_rules.countDocuments({}));
+  print('tournaments_ref:', db.tournaments_ref.countDocuments({}));
 "
 ```
 
@@ -517,21 +518,29 @@ docker-compose exec mongo mongosh hkjc --eval "
 HKJCScrapper/
 ├── src/hkjc_scrapper/
 │   ├── __init__.py
+│   ├── __main__.py          # python -m hkjc_scrapper support
 │   ├── config.py            # Settings via pydantic-settings + .env
 │   ├── client.py            # HKJC GraphQL API client (requests.Session)
 │   ├── models.py            # Pydantic models (API response + WatchRule)
 │   ├── parser.py            # Raw JSON -> Pydantic model transformation
 │   ├── db.py                # MongoDB connection & CRUD (matches, odds, rules)
-│   ├── cli.py               # CLI for managing watch rules
+│   ├── cli.py               # CLI for managing watch rules + ad-hoc queries
 │   ├── scheduler.py         # Rule-based scheduler (discovery + fetch jobs)
+│   ├── reference_data.py    # Seed data for odds types and tournaments
 │   └── main.py              # Entry point (--once or service mode)
 ├── tests/
 ├── docs/
 │   ├── project_tracker.md   # High-level 4-module roadmap
 │   ├── project_plan.md      # This file
+│   ├── commands.md           # CLI command reference
+│   ├── database.md           # MongoDB schema documentation
+│   ├── odds_types.md         # Odds type reference table
 │   ├── hkjc_api_guide.txt   # Full API guide (Chinese)
 │   └── api/
 │       └── base_api_sample_response.json
+├── Dockerfile               # Production Docker image
+├── docker-compose.yml       # MongoDB + scrapper orchestration
+├── .dockerignore
 ├── .env.example
 ├── .gitignore
 ├── pyproject.toml
