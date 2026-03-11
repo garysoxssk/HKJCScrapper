@@ -16,7 +16,7 @@ RUN uv sync --frozen --no-dev --no-install-project
 
 # Copy source code
 COPY src/ src/
-COPY .env.example .env.example
+COPY .env .env
 
 # Install the project itself
 RUN uv sync --frozen --no-dev

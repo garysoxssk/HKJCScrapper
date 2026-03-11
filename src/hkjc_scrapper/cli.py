@@ -32,6 +32,7 @@ from hkjc_scrapper.models import (
     WatchRule,
 )
 from hkjc_scrapper.parser import parse_matches_response
+from hkjc_scrapper.tg_msg_client import TGMessageClient
 
 
 def parse_observation(obs_str: str) -> Observation:
@@ -109,7 +110,7 @@ def parse_observation(obs_str: str) -> Observation:
         )
 
 
-def cmd_add_rule(args, db: MongoDBClient) -> int:
+def cmd_add_rule(args, db: MongoDBClient, tg: TGMessageClient | None = None) -> int:
     """Handle add-rule command."""
     teams = [t.strip() for t in args.teams.split(",")] if args.teams else []
     tournaments = [t.strip() for t in args.tournaments.split(",")] if args.tournaments else []
@@ -143,6 +144,13 @@ def cmd_add_rule(args, db: MongoDBClient) -> int:
         db.add_watch_rule(rule)
         print(f"Added rule: {args.name}")
         _print_rule_detail(rule.model_dump())
+        if tg:
+            detail_parts = []
+            if teams:
+                detail_parts.append(f"Teams: {', '.join(teams)}")
+            if tournaments:
+                detail_parts.append(f"Tournaments: {', '.join(tournaments)}")
+            tg.notify_rule_change("added", args.name, "\n".join(detail_parts))
         return 0
     except DuplicateKeyError:
         print(f"Error: rule '{args.name}' already exists")
@@ -195,28 +203,34 @@ def cmd_show_rule(args, db: MongoDBClient) -> int:
     return 0
 
 
-def cmd_enable_rule(args, db: MongoDBClient) -> int:
+def cmd_enable_rule(args, db: MongoDBClient, tg: TGMessageClient | None = None) -> int:
     """Handle enable-rule command."""
     if db.enable_watch_rule(args.name):
         print(f"Enabled rule: {args.name}")
+        if tg:
+            tg.notify_rule_change("enabled", args.name)
         return 0
     print(f"Rule '{args.name}' not found.")
     return 1
 
 
-def cmd_disable_rule(args, db: MongoDBClient) -> int:
+def cmd_disable_rule(args, db: MongoDBClient, tg: TGMessageClient | None = None) -> int:
     """Handle disable-rule command."""
     if db.disable_watch_rule(args.name):
         print(f"Disabled rule: {args.name}")
+        if tg:
+            tg.notify_rule_change("disabled", args.name)
         return 0
     print(f"Rule '{args.name}' not found.")
     return 1
 
 
-def cmd_delete_rule(args, db: MongoDBClient) -> int:
+def cmd_delete_rule(args, db: MongoDBClient, tg: TGMessageClient | None = None) -> int:
     """Handle delete-rule command."""
     if db.delete_watch_rule(args.name):
         print(f"Deleted rule: {args.name}")
+        if tg:
+            tg.notify_rule_change("deleted", args.name)
         return 0
     print(f"Rule '{args.name}' not found.")
     return 1
@@ -279,7 +293,7 @@ def cmd_list_matches(args, db: MongoDBClient, client: HKJCGraphQLClient) -> int:
     return 0
 
 
-def cmd_fetch_match(args, db: MongoDBClient, client: HKJCGraphQLClient) -> int:
+def cmd_fetch_match(args, db: MongoDBClient, client: HKJCGraphQLClient, tg: TGMessageClient | None = None) -> int:
     """Handle fetch-match command: fetch odds for a specific match and save."""
     # Parse odds types
     if not args.odds:
@@ -358,6 +372,14 @@ def cmd_fetch_match(args, db: MongoDBClient, client: HKJCGraphQLClient) -> int:
         f"\nSaved to DB: {result['matches_upserted']} match, "
         f"{result['odds_snapshots']} odds snapshots"
     )
+    if tg and result["odds_snapshots"] > 0:
+        tg.notify_fetch(
+            front_end_id=target.frontEndId,
+            home=target.homeTeam.name_en,
+            away=target.awayTeam.name_en,
+            odds_types=odds_types,
+            odds_snapshots=result["odds_snapshots"],
+        )
     return 0
 
 
@@ -519,6 +541,22 @@ def cmd_get_odds(args, db: MongoDBClient) -> int:
         for snap in snapshots:
             _print_odds_snapshot_row(snap)
 
+    return 0
+
+
+def cmd_send_message(args, db: MongoDBClient, tg: TGMessageClient | None = None) -> int:
+    """Handle send-message command: send a custom message to Telegram."""
+    if not tg or not tg.enabled:
+        print("Error: Telegram is not enabled. Check TELEGRAM_ENABLED and credentials.")
+        return 1
+
+    message = args.message
+    if not message:
+        print("Error: --message is required")
+        return 1
+
+    tg.notify_custom(message)
+    print(f"Message sent to Telegram.")
     return 0
 
 
@@ -713,7 +751,27 @@ def build_parser() -> argparse.ArgumentParser:
     go_parser.add_argument("--all", action="store_true", help="Show all snapshots (time series)")
     go_parser.add_argument("--last", type=int, default=0, help="Show last N snapshots")
 
+    # send-message (Telegram)
+    sm_parser = subparsers.add_parser(
+        "send-message", help="Send a custom message to Telegram group"
+    )
+    sm_parser.add_argument("--message", "-m", required=True, help="Message text to send")
+
     return parser
+
+
+def _init_tg(settings: Settings) -> TGMessageClient | None:
+    """Initialize Telegram client for CLI commands. Returns None on failure.
+
+    Note: TGMessageClient now auto-connects in background thread on init.
+    """
+    tg = TGMessageClient(settings)
+    if not tg.enabled:
+        return None
+    # Give the background thread a moment to connect
+    import time
+    time.sleep(1)
+    return tg
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -729,34 +787,60 @@ def main(argv: list[str] | None = None) -> int:
     db = MongoDBClient(settings.MONGODB_URI, settings.MONGODB_DATABASE)
     db.ensure_collections()
 
-    # Commands that only need db
-    db_commands = {
-        "add-rule": cmd_add_rule,
+    # Commands that need TG notifications (write operations + fetch)
+    tg_commands = {
+        "add-rule", "enable-rule", "disable-rule", "delete-rule",
+        "fetch-match", "send-message",
+    }
+
+    # Read-only commands (no TG needed)
+    readonly_db_commands = {
         "list-rules": cmd_list_rules,
         "show-rule": cmd_show_rule,
-        "enable-rule": cmd_enable_rule,
-        "disable-rule": cmd_disable_rule,
-        "delete-rule": cmd_delete_rule,
         "get-match": cmd_get_match,
         "get-odds": cmd_get_odds,
     }
 
-    # Commands that need both db and client (ad-hoc API calls)
-    api_commands = {
+    # Read-only API commands (no TG needed)
+    readonly_api_commands = {
         "list-matches": cmd_list_matches,
-        "fetch-match": cmd_fetch_match,
     }
 
+    # Commands that modify rules (db + tg)
+    rule_write_commands = {
+        "add-rule": cmd_add_rule,
+        "enable-rule": cmd_enable_rule,
+        "disable-rule": cmd_disable_rule,
+        "delete-rule": cmd_delete_rule,
+    }
+
+    tg = None
     try:
-        if args.command in db_commands:
-            return db_commands[args.command](args, db)
-        elif args.command in api_commands:
+        # Initialize TG only for commands that need it
+        if args.command in tg_commands:
+            tg = _init_tg(settings)
+
+        if args.command in readonly_db_commands:
+            return readonly_db_commands[args.command](args, db)
+        elif args.command in readonly_api_commands:
             client = HKJCGraphQLClient(settings)
-            return api_commands[args.command](args, db, client)
+            return readonly_api_commands[args.command](args, db, client)
+        elif args.command in rule_write_commands:
+            return rule_write_commands[args.command](args, db, tg=tg)
+        elif args.command == "fetch-match":
+            client = HKJCGraphQLClient(settings)
+            return cmd_fetch_match(args, db, client, tg=tg)
+        elif args.command == "send-message":
+            return cmd_send_message(args, db, tg=tg)
         else:
             parser.print_help()
             return 1
     finally:
+        if tg and tg.enabled:
+            try:
+                tg.close()
+            except Exception:
+                pass
         db.close()
 
 

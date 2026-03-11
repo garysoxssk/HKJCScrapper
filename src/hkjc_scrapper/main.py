@@ -10,26 +10,59 @@ Usage:
 
 import argparse
 import logging
+import os
 import sys
+from logging.handlers import RotatingFileHandler
 
 from hkjc_scrapper.client import HKJCGraphQLClient
 from hkjc_scrapper.config import Settings
 from hkjc_scrapper.db import MongoDBClient
 from hkjc_scrapper.scheduler import MatchScheduler
+from hkjc_scrapper.tg_msg_client import TGMessageClient
+
+LOG_DIR = "logs"
+LOG_FILE = os.path.join(LOG_DIR, "hkjc_scrapper.log")
+LOG_MAX_BYTES = 10 * 1024 * 1024  # 10 MB
+LOG_BACKUP_COUNT = 5
+LOG_FORMAT = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+LOG_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
 def setup_logging(level: str) -> None:
-    """Configure logging for the application."""
+    """Configure logging to both stdout and rotating file.
+
+    Log files are written to logs/hkjc_scrapper.log with automatic
+    rotation at 10 MB, keeping 5 backup files.
+    """
     log_level = getattr(logging, level.upper(), logging.INFO)
-    logging.basicConfig(
-        level=log_level,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
+    root_logger = logging.getLogger()
+    root_logger.setLevel(log_level)
+
+    formatter = logging.Formatter(LOG_FORMAT, datefmt=LOG_DATE_FORMAT)
+
+    # Console handler (stdout)
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(log_level)
+    console_handler.setFormatter(formatter)
+    root_logger.addHandler(console_handler)
+
+    # File handler (rotating)
+    os.makedirs(LOG_DIR, exist_ok=True)
+    file_handler = RotatingFileHandler(
+        LOG_FILE,
+        maxBytes=LOG_MAX_BYTES,
+        backupCount=LOG_BACKUP_COUNT,
+        encoding="utf-8",
     )
+    file_handler.setLevel(log_level)
+    file_handler.setFormatter(formatter)
+    root_logger.addHandler(file_handler)
+
     # Reduce noise from libraries
     logging.getLogger("apscheduler").setLevel(logging.WARNING)
     logging.getLogger("pymongo").setLevel(logging.WARNING)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
+    logging.getLogger("telethon").setLevel(logging.WARNING)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -68,20 +101,30 @@ def main(argv: list[str] | None = None) -> int:
     db = MongoDBClient(settings.MONGODB_URI, settings.MONGODB_DATABASE)
     db.ensure_collections()
 
+    # Initialize Telegram client (auto-connects in background thread if enabled)
+    tg = TGMessageClient(settings)
+    if tg.enabled:
+        logger.info("Telegram notifications: enabled")
+    else:
+        logger.info("Telegram notifications: disabled")
+
     # Log active rule count
     rules = db.get_active_watch_rules()
     logger.info("Active watch rules: %d", len(rules))
     for rule in rules:
         logger.info("  - %s", rule.name)
 
-    scheduler = MatchScheduler(client, db, settings)
+    mode = "single fetch" if args.once else "service"
+    scheduler = MatchScheduler(client, db, settings, tg=tg)
+
+    # Send startup notification
+    if tg.enabled:
+        tg.notify_startup(mode, len(rules))
 
     try:
         if args.once:
-            # Single fetch mode
             scheduler.run_once()
         else:
-            # Service mode
             scheduler.setup_signal_handlers()
             scheduler.start()
             logger.info("Service running. Press Ctrl+C to stop.")
@@ -91,6 +134,8 @@ def main(argv: list[str] | None = None) -> int:
         if not args.once:
             scheduler.stop()
     finally:
+        if tg.enabled:
+            tg.close()
         db.close()
         logger.info("HKJCScrapper stopped")
 

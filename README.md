@@ -143,7 +143,7 @@ cd HKJCScrapper
 uv sync
 
 # Copy environment template
-cp .env.example .env
+cp .env .env
 # Edit .env with your MongoDB URI and other settings
 
 # Requires a running MongoDB instance (local or remote)
@@ -201,10 +201,10 @@ uv run pytest
 
 | Test Suite | Count | Command |
 |------------|-------|---------|
-| Unit tests (default) | 97 | `uv run pytest` |
+| Unit tests (default) | 137 | `uv run pytest` |
 | MongoDB integration | 11 | `uv run pytest -m mongodb` |
 | Live API integration | 5 | `uv run pytest -m integration` |
-| **Total** | **113** | `uv run pytest -m "integration or mongodb" --override-ini="addopts="` |
+| **Total** | **153** | `uv run pytest -m "integration or mongodb" --override-ini="addopts="` |
 
 ## Data Collections
 

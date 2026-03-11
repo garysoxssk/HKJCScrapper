@@ -203,7 +203,7 @@ Note: `POLL_INTERVAL_SECONDS` and `ODDS_TYPES` are no longer global — they are
 - Created pytest.ini with three markers: default (unit), `integration` (live API), `mongodb` (real MongoDB)
 - Unit tests use mongomock (no external dependencies needed)
 - MongoDB integration tests use `hkjc_test` database with auto-cleanup
-- **Test counts**: 97 unit tests + 11 mongodb integration + 5 API integration = 113 total
+- **Test counts**: 137 unit tests + 11 mongodb integration + 5 API integration = 153 total
 - All tests passing
 
 **Reference Data Enhancements - COMPLETE**
@@ -239,6 +239,16 @@ Note: `POLL_INTERVAL_SECONDS` and `ODDS_TYPES` are no longer global — they are
 - MongoDB health check, volume persistence, proper service dependency
 - Tested: both containers start, scrapper connects to MongoDB, discovery runs, 134 tournaments fetched
 - `.dockerignore` excludes tests, docs, IDE files from production image
+
+**Telegram Notifications - COMPLETE**
+- `TGMessageClient` in `src/hkjc_scrapper/tg_msg_client.py` using Telethon (MTProto)
+- `TELEGRAM_ENABLED` toggle in config to disable notifications without removing credentials
+- Integrated into scheduler: discovery (when jobs scheduled), fetch (when odds saved)
+- Integrated into CLI: `add-rule`, `enable-rule`, `disable-rule`, `delete-rule`, `fetch-match`
+- New CLI command: `send-message -m "..."` for one-off custom messages
+- Sync wrapper for calling async Telethon from sync scheduler/CLI code
+- All sends are fire-and-forget: failures logged but never crash the caller
+- 16 unit tests for TG client (mocked, no Telegram connection needed)
 
 **Phase 9 (Extended Testing)** - See `docs/project_plan.md` for details.
 
@@ -279,3 +289,4 @@ Note: `POLL_INTERVAL_SECONDS` and `ODDS_TYPES` are no longer global — they are
 - **Milestone 2 Reached**: Full rule-based pipeline running end-to-end: watch rules -> discovery -> scheduled fetches -> MongoDB storage. Can run as service or single-shot.
 - **Phase 10 Docker**: Dockerfile uses multi-step uv install for layer caching (deps first, then source). `docker-compose.yml` uses `mongo:8` with health check — scrapper waits for MongoDB to be healthy before starting. Data persists in `mongodb_data` Docker volume. CLI commands work via `docker compose exec scrapper uv run python -m hkjc_scrapper.cli ...`.
 - **Ad-hoc CLI Commands**: Added `list-matches` (browse live matches from API), `fetch-match` (fetch + save specific match odds), `get-match` (query stored match from DB), `get-odds` (query odds history with time filters: `--latest`, `--before-kickoff`, `--all`, `--last N`). Total CLI commands: 10. Total unit tests: 121.
+- **Telegram Integration**: `TGMessageClient` wraps Telethon with sync/async interfaces. `TELEGRAM_ENABLED` toggle in Settings. Integrated into: (1) scheduler — discovery notifications when jobs scheduled, fetch notifications when odds saved, (2) CLI — `add-rule`, `enable-rule`, `disable-rule`, `delete-rule`, `fetch-match` send TG notifications, (3) new `send-message` CLI command for custom one-off messages. All sends are fire-and-forget (failures logged, never crash). Uses HTML formatting for structured messages. Session file named via `TELEGRAM_SESSION_NAME` setting. Total CLI commands: 11. Total unit tests: 137.

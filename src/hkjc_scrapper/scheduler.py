@@ -27,6 +27,7 @@ from hkjc_scrapper.parser import (
     get_match_description,
     parse_matches_response,
 )
+from hkjc_scrapper.tg_msg_client import TGMessageClient
 
 logger = logging.getLogger(__name__)
 
@@ -113,10 +114,12 @@ class MatchScheduler:
         client: HKJCGraphQLClient,
         db: MongoDBClient,
         settings: Settings,
+        tg: TGMessageClient | None = None,
     ):
         self.client = client
         self.db = db
         self.settings = settings
+        self.tg = tg
         self._scheduler = BackgroundScheduler()
         self._shutdown_event = threading.Event()
         # Track scheduled job IDs to avoid duplicates: set of
@@ -233,6 +236,12 @@ class MatchScheduler:
                 "[Discovery] Cycle complete: %d new jobs scheduled",
                 jobs_scheduled,
             )
+
+            # Notify via Telegram (only when jobs were scheduled)
+            if jobs_scheduled > 0 and self.tg:
+                self.tg.notify_discovery(
+                    len(matches), len(rules), jobs_scheduled
+                )
 
         except Exception:
             logger.exception("[Discovery] Error during discovery cycle")
@@ -440,6 +449,15 @@ class MatchScheduler:
                 result["matches_upserted"],
                 result["odds_snapshots"],
             )
+
+            if self.tg and result["odds_snapshots"] > 0:
+                self.tg.notify_fetch(
+                    front_end_id=front_end_id,
+                    home=target.homeTeam.name_en,
+                    away=target.awayTeam.name_en,
+                    odds_types=odds_types,
+                    odds_snapshots=result["odds_snapshots"],
+                )
 
         except Exception:
             logger.exception("[Fetch] Error fetching %s", front_end_id)

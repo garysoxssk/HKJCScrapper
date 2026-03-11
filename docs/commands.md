@@ -284,6 +284,53 @@ uv run python -m hkjc_scrapper.cli get-odds --id 50062141 --before-kickoff
 
 ---
 
+## Telegram Notifications
+
+### Send a Custom Message
+
+```bash
+uv run python -m hkjc_scrapper.cli send-message -m "Hello from HKJC bot!"
+
+# HTML formatting is supported
+uv run python -m hkjc_scrapper.cli send-message -m "<b>Alert:</b> Match starting soon"
+```
+
+### Automatic Notifications
+
+The following events send Telegram messages automatically when `TELEGRAM_ENABLED=true`:
+
+| Event | When | Message Content |
+|-------|------|-----------------|
+| **Service startup** | `main` starts | Mode, active rule count, timestamp |
+| **Discovery cycle** | New jobs scheduled | Match count, rule count, jobs scheduled |
+| **Odds fetched** | Scheduler or `fetch-match` saves data | Match teams, odds types, snapshot count |
+| **Rule added** | `add-rule` | Rule name, filters |
+| **Rule enabled** | `enable-rule` | Rule name |
+| **Rule disabled** | `disable-rule` | Rule name |
+| **Rule deleted** | `delete-rule` | Rule name |
+
+### Telegram Setup
+
+1. Create a bot via [@BotFather](https://t.me/BotFather) and get the bot token
+2. Add the bot to your Telegram group
+3. Get the **numeric chat ID** of your group (add [@userinfobot](https://t.me/userinfobot) to the group, or use `https://api.telegram.org/bot<TOKEN>/getUpdates` after sending a message)
+4. Set the values in `.env`:
+   ```
+   TELEGRAM_ENABLED=true
+   TELEGRAM_APP_ID=<your app id from my.telegram.org>
+   TELEGRAM_API_KEY=<your api hash from my.telegram.org>
+   TELEGRAM_BOT_TOKEN=<bot token from BotFather>
+   TELEGRAM_GROUP_ID=-1001234567890
+   ```
+
+**Important**: Bots cannot resolve invite links (`https://t.me/+XXX`). You must use the **numeric chat ID** (e.g., `-1001234567890`).
+
+### Disable Notifications
+
+Set `TELEGRAM_ENABLED=false` in `.env` or unset the credentials. All notification calls become no-ops.
+
+---
+
 ## One-Time Data Seeding
 
 ### Seed Odds Types (38 types with EN/CH translations)
@@ -321,6 +368,28 @@ result = db.upsert_tournaments(tournaments)
 print(f'Tournaments: {result[\"inserted\"]} inserted, {result[\"updated\"]} updated')
 db.close()
 "
+```
+
+---
+
+## Logging
+
+Logs are written to **both stdout and a rotating file** (`logs/hkjc_scrapper.log`).
+
+- Auto-rotates at **10 MB**, keeps **5 backup files**
+- Log level configurable via `LOG_LEVEL` env var
+- File: `logs/hkjc_scrapper.log` (created automatically)
+
+```bash
+# View live logs
+tail -f logs/hkjc_scrapper.log
+
+# Search for errors
+grep ERROR logs/hkjc_scrapper.log
+
+# In Docker, logs go to both stdout (docker logs) and the file inside the container
+docker compose logs -f scrapper
+# Or mount the logs dir: add "- ./logs:/app/logs" to docker-compose.yml volumes
 ```
 
 ---
@@ -375,3 +444,9 @@ Set in `.env` file or as environment variables:
 | `GRAPHQL_ENDPOINT` | `https://info.cld.hkjc.com/graphql/base/` | HKJC API URL |
 | `DISCOVERY_INTERVAL_SECONDS` | `900` | How often to discover matches (seconds) |
 | `LOG_LEVEL` | `INFO` | Logging level (DEBUG, INFO, WARNING, ERROR) |
+| `TELEGRAM_ENABLED` | `true` | Enable/disable Telegram notifications |
+| `TELEGRAM_APP_ID` | *(required)* | Telegram API app ID (from my.telegram.org) |
+| `TELEGRAM_API_KEY` | *(required)* | Telegram API hash (from my.telegram.org) |
+| `TELEGRAM_GROUP_ID` | *(required)* | Telegram group numeric chat ID (e.g., `-1001234567890`) |
+| `TELEGRAM_BOT_TOKEN` | *(required)* | Bot token from @BotFather |
+| `TELEGRAM_SESSION_NAME` | `hkjc_scrapper_msg_bot` | Telethon session file name |

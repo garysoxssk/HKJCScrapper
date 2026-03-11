@@ -26,5 +26,11 @@ ENV/
 .DS_Store
 Thumbs.db
 
+# Logs
+logs/
+
+# Session files
+*.session
+
 # uv
 # Note: uv.lock is intentionally tracked for reproducible Docker builds

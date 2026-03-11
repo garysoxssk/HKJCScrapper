@@ -20,6 +20,14 @@ class Settings(BaseSettings):
     START_INDEX: int = 1
     END_INDEX: int = 60
 
+    # Telegram notifications
+    TELEGRAM_ENABLED: bool = True
+    TELEGRAM_APP_ID: int = 0
+    TELEGRAM_API_KEY: str = ""
+    TELEGRAM_GROUP_ID: str = ""
+    TELEGRAM_SESSION_NAME: str = "hkjc_scrapper_msg_bot"
+    TELEGRAM_BOT_TOKEN: str = ""
+
     # Logging
     LOG_LEVEL: str = "INFO"
 
