@@ -151,20 +151,44 @@ class TGMessageClient:
     # Core send (async - runs in dedicated loop via thread-safe call)
     # ========================================================================
 
+    async def _reconnect(self) -> bool:
+        """Attempt to reconnect the Telethon client after a connection loss.
+
+        Returns True if reconnection succeeded.
+        """
+        try:
+            logger.info("[TG] Attempting reconnect...")
+            if not self._client.is_connected():
+                await self._client.connect()
+            # Re-resolve entity in case session state is stale
+            target = _parse_group_id(self.settings.TELEGRAM_GROUP_ID)
+            self._entity = await self._client.get_entity(target)
+            logger.info("[TG] Reconnected successfully")
+            return True
+        except Exception:
+            logger.warning("[TG] Reconnect failed")
+            return False
+
     async def send_message_async(
         self, message: str, parse_mode: str = "html"
     ) -> Optional[Message]:
-        """Send a message asynchronously (internal use)."""
+        """Send a message asynchronously with auto-reconnect on failure."""
         if not self._enabled or not self._client:
             return None
 
-        try:
-            return await self._client.send_message(
-                self._entity, message, parse_mode=parse_mode
-            )
-        except Exception:
-            logger.exception("[TG] Failed to send message")
-            return None
+        for attempt in range(2):  # Try once, reconnect, try again
+            try:
+                return await self._client.send_message(
+                    self._entity, message, parse_mode=parse_mode
+                )
+            except Exception:
+                if attempt == 0:
+                    logger.warning("[TG] Send failed, attempting reconnect...")
+                    if await self._reconnect():
+                        continue  # Retry after reconnect
+                logger.exception("[TG] Failed to send message after reconnect")
+                return None
+        return None
 
     # ========================================================================
     # Sync wrapper (for use from sync code like scheduler/CLI)
