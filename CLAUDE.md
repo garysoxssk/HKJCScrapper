@@ -134,10 +134,15 @@ uv run python -m hkjc_scrapper.cli add-rule --name "..." --tournaments "EPL" --o
 uv run python -m hkjc_scrapper.cli disable-rule --name "..."
 ```
 
-## Environment Variables
+## Environment Profiles
+
+Two profiles via `APP_ENV` env var:
+- `APP_ENV=local` (default) - loads `.env.local`, local MongoDB
+- `APP_ENV=prod` - loads `.env.prod`, MongoDB Atlas (password via `MONGODB_PASSWORD` env var)
 
 See `.env.example` for all available config. Key ones:
-- `MONGODB_URI` - MongoDB connection string (default: `mongodb://localhost:27017`)
+- `MONGODB_URI` - MongoDB connection string (local profile)
+- `MONGODB_USER` / `MONGODB_PASSWORD` / `MONGODB_HOST` - Atlas connection (prod profile, URI built from parts)
 - `MONGODB_DATABASE` - Database name (default: `hkjc`)
 - `GRAPHQL_ENDPOINT` - API URL (default: `https://info.cld.hkjc.com/graphql/base/`)
 - `DISCOVERY_INTERVAL_SECONDS` - How often to discover matches and evaluate rules (default: `900`)

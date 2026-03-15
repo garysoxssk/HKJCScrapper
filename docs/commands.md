@@ -433,13 +433,31 @@ uv add --dev <package-name>
 
 ---
 
+## Environment Profiles
+
+Switch between local and production configs via `APP_ENV`:
+
+```bash
+APP_ENV=local uv run python -m hkjc_scrapper.main       # uses .env.local
+APP_ENV=prod MONGODB_PASSWORD=xxx uv run python -m hkjc_scrapper.main  # uses .env.prod
+```
+
+| Profile | File | MongoDB |
+|---------|------|---------|
+| `local` (default) | `.env.local` | Local `mongodb://localhost:27017` |
+| `prod` | `.env.prod` | Atlas `mongodb+srv://...` (password via env var) |
+
 ## Environment Variables
 
-Set in `.env` file or as environment variables:
+Set in `.env.local` / `.env.prod` or as OS environment variables:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `MONGODB_URI` | `mongodb://localhost:27017` | MongoDB connection string |
+| `APP_ENV` | `local` | Profile name (`local` or `prod`) |
+| `MONGODB_URI` | `mongodb://localhost:27017` | MongoDB connection string (for local) |
+| `MONGODB_USER` | | Atlas username (for prod) |
+| `MONGODB_PASSWORD` | | Atlas password (for prod, pass at runtime) |
+| `MONGODB_HOST` | | Atlas cluster host (for prod) |
 | `MONGODB_DATABASE` | `hkjc` | Database name |
 | `GRAPHQL_ENDPOINT` | `https://info.cld.hkjc.com/graphql/base/` | HKJC API URL |
 | `DISCOVERY_INTERVAL_SECONDS` | `900` | How often to discover matches (seconds) |

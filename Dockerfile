@@ -16,10 +16,12 @@ RUN uv sync --frozen --no-dev --no-install-project
 
 # Copy source code
 COPY src/ src/
-COPY .env .env
 
 # Install the project itself
 RUN uv sync --frozen --no-dev
+
+# Create logs directory
+RUN mkdir -p logs
 
 # Default command: run in service mode
 CMD ["uv", "run", "python", "-m", "hkjc_scrapper.main"]

@@ -13,8 +13,10 @@ build/
 venv/
 ENV/
 
-# Environment variables
+# Environment variables (all profiles contain secrets)
 .env
+.env.local
+.env.prod
 
 # IDE
 .idea/

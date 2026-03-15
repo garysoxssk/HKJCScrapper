@@ -85,9 +85,19 @@ def main(argv: list[str] | None = None) -> int:
     logger = logging.getLogger("hkjc_scrapper")
 
     # Log startup info
+    # Mask password in URI for logging
+    log_uri = settings.MONGODB_URI
+    if "@" in log_uri:
+        # mongodb+srv://user:password@host -> mongodb+srv://user:***@host
+        pre, post = log_uri.split("@", 1)
+        if ":" in pre:
+            scheme_user = pre.rsplit(":", 1)[0]
+            log_uri = f"{scheme_user}:***@{post}"
+
     logger.info("=" * 60)
     logger.info("HKJCScrapper starting...")
-    logger.info("  MongoDB: %s / %s", settings.MONGODB_URI, settings.MONGODB_DATABASE)
+    logger.info("  Profile: %s", settings.APP_ENV)
+    logger.info("  MongoDB: %s / %s", log_uri, settings.MONGODB_DATABASE)
     logger.info("  API endpoint: %s", settings.GRAPHQL_ENDPOINT)
     logger.info("  Mode: %s", "single fetch" if args.once else "service")
     if not args.once:

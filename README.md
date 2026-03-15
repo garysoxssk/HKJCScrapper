@@ -71,65 +71,62 @@ Optionally automates bet placement on HKJC using Playwright + stealth mode. **No
 - **Reference Data**: Built-in lookups for 18 odds types (HAD, CHL, HDC, etc.) and 8 tournaments (EPL, LLG, UCL, etc.)
 - **Match Alignment**: Cross-module matching via team names + kickoff time for integrating HKJC and 3rd party data
 
-## Quick Start (Docker)
+## Quick Start (Docker - Production)
 
-The fastest way to get everything running. Requires [Docker](https://docs.docker.com/get-docker/) and Docker Compose.
+Connects to MongoDB Atlas. Requires [Docker](https://docs.docker.com/get-docker/) and Docker Compose.
 
 ```bash
 # Clone the repository
 git clone <repository-url>
 cd HKJCScrapper
 
-# Start MongoDB + scrapper service
-docker compose up -d
+# Copy and fill in your prod config
+cp .env.example .env.prod
+# Edit .env.prod with your MongoDB Atlas credentials and Telegram settings
+
+# Start the scrapper (pass MongoDB password at runtime)
+MONGODB_PASSWORD=your_password docker compose up -d
 
 # Check status
 docker compose ps
 docker compose logs -f scrapper
 
-# Add a watch rule (via the running container)
-docker compose exec scrapper uv run python -m hkjc_scrapper.cli add-rule \
+# Add a watch rule
+MONGODB_PASSWORD=your_password docker compose exec scrapper \
+  uv run python -m hkjc_scrapper.cli add-rule \
   --name "EPL HAD" --tournaments "EPL" \
   --observation "HAD,HHA:event:before_kickoff:30"
 
-# Run a one-shot fetch
-docker compose run --rm scrapper uv run python -m hkjc_scrapper.main --once
-
-# Seed reference data (odds types)
-docker compose exec scrapper uv run python -c "
-from hkjc_scrapper.config import Settings
-from hkjc_scrapper.db import MongoDBClient
-from hkjc_scrapper.reference_data import ODDS_TYPES_DATA
-db = MongoDBClient(Settings().MONGODB_URI, Settings().MONGODB_DATABASE)
-db.seed_odds_types([ot.model_dump() for ot in ODDS_TYPES_DATA])
-db.close()
-"
-
-# Check data in MongoDB
-docker compose exec mongodb mongosh hkjc --quiet --eval "
-print('matches:', db.matches_current.countDocuments({}));
-print('odds_history:', db.odds_history.countDocuments({}));
-print('watch_rules:', db.watch_rules.countDocuments({}));
-print('tournaments:', db.tournaments_ref.countDocuments({}));
-"
-
-# Stop everything (data persists in Docker volume)
+# Stop
 docker compose down
-
-# Stop and delete all data
-docker compose down -v
 ```
 
-### Environment Variables
+### Docker with Local MongoDB
 
-Override in `docker-compose.yml` under `scrapper.environment`:
+For local development with a bundled MongoDB container:
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `MONGODB_URI` | `mongodb://mongodb:27017` | MongoDB connection (use `mongodb` hostname inside Docker) |
-| `MONGODB_DATABASE` | `hkjc` | Database name |
-| `DISCOVERY_INTERVAL_SECONDS` | `900` | Discovery job interval (seconds) |
-| `LOG_LEVEL` | `INFO` | Logging level |
+```bash
+docker compose -f docker-compose.local.yml up -d
+docker compose -f docker-compose.local.yml logs -f scrapper
+docker compose -f docker-compose.local.yml down
+```
+
+### Environment Profiles
+
+| Profile | File | MongoDB | Docker file |
+|---------|------|---------|-------------|
+| `local` | `.env.local` | Local `mongodb://localhost:27017` | `docker-compose.local.yml` |
+| `prod` | `.env.prod` | Atlas `mongodb+srv://...` | `docker-compose.yml` |
+
+Switch profiles via `APP_ENV` environment variable:
+
+```bash
+# Local (default)
+APP_ENV=local uv run python -m hkjc_scrapper.main
+
+# Production
+APP_ENV=prod MONGODB_PASSWORD=xxx uv run python -m hkjc_scrapper.main
+```
 
 ## Local Development (without Docker)
 
