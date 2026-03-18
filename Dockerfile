@@ -2,6 +2,9 @@
 
 FROM python:3.13-slim AS base
 
+# Install CA certificates for TLS connections (e.g., MongoDB Atlas)
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
+
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
