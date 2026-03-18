@@ -91,12 +91,14 @@ HKJCScrapper/
 
 - **Endpoint**: `https://info.cld.hkjc.com/graphql/base/` (POST)
 - **Authentication**: None, but requires browser-like headers
-- **Request flow**: OPTIONS preflight -> POST basic match list -> OPTIONS -> POST detailed match list (with odds) -> POST basic match list
+- **Query Whitelisting**: API only accepts specific pre-approved query formats. Custom queries return `"query isn't whitelisted"` error. Must use exact query structure from `resources/single-match-req-1.txt` with all parameters defined.
+- **Request flow**: OPTIONS preflight -> POST match list query (with odds types filter)
 - **Response structure**: `{ "data": { "matches": [ ... ] } }`
-- **Each match contains**: id, frontEndId, matchDate, kickOffTime, status, homeTeam, awayTeam, tournament, poolInfo, runningResult, foPools (odds data)
+- **Field naming**: Mix of snake_case (name_en, name_ch) and camelCase (frontEndId, kickOffTime)
+- **Each match contains**: id, frontEndId, matchDate, kickOffTime, status, homeTeam, awayTeam, tournament, poolInfo, runningResult, foPools (odds data), liveEvents, venue, tvChannels, and more
 - **foPools structure**: Each pool has an `oddsType` (e.g. "HHA"), `lines` (each with a `condition` like "-2.0"), and `combinations` (each with `currentOdds` and `selections`)
 - **Full API guide**: `docs/hkjc_api_guide.txt` (Chinese, comprehensive)
-- **Sample response**: `docs/api/base_api_sample_response.json`
+- **Sample responses**: `docs/api/base_api_sample_response.json` and `resources/single-match-res-1.json` (real API capture)
 
 ### Odds Type Codes
 HAD (Home/Away/Draw), EHA (Early HAD), HHA (Handicap), HDC (Asian Handicap), HIL (Hi-Lo), CHL (Corner Hi-Lo), CRS (Correct Score), TTG (Total Goals), NTS (Next Team to Score), CHD (Corner HAD), FHA (First Half HAD), FHL (First Half Hi-Lo), FHH (First Half Handicap), FCS (First Correct Score), OOE (Odd/Even), FTS (First Team to Score), FGS (First Goal Scorer), AGS (Anytime Goal Scorer)
@@ -132,10 +134,15 @@ uv run python -m hkjc_scrapper.cli add-rule --name "..." --tournaments "EPL" --o
 uv run python -m hkjc_scrapper.cli disable-rule --name "..."
 ```
 
-## Environment Variables
+## Environment Profiles
+
+Two profiles via `APP_ENV` env var:
+- `APP_ENV=local` (default) - loads `.env.local`, local MongoDB
+- `APP_ENV=prod` - loads `.env.prod`, MongoDB Atlas (password via `MONGODB_PASSWORD` env var)
 
 See `.env.example` for all available config. Key ones:
-- `MONGODB_URI` - MongoDB connection string (default: `mongodb://localhost:27017`)
+- `MONGODB_URI` - MongoDB connection string (local profile)
+- `MONGODB_USER` / `MONGODB_PASSWORD` / `MONGODB_HOST` - Atlas connection (prod profile, URI built from parts)
 - `MONGODB_DATABASE` - Database name (default: `hkjc`)
 - `GRAPHQL_ENDPOINT` - API URL (default: `https://info.cld.hkjc.com/graphql/base/`)
 - `DISCOVERY_INTERVAL_SECONDS` - How often to discover matches and evaluate rules (default: `900`)
@@ -167,10 +174,88 @@ Note: `POLL_INTERVAL_SECONDS` and `ODDS_TYPES` are no longer global — they are
 - Added reference_data.py with seed data for 18 odds types and 8 tournaments
 - Verified: Sample response parses successfully through models
 
-**Phase 4 (API Client) - NOT STARTED** <-- Start here
-- Implement `HKJCGraphQLClient` in `src/hkjc_scrapper/client.py`
+**Phase 4 (API Client) - COMPLETE**
+- Implemented `HKJCGraphQLClient` with GraphQL query templates
+- Browser simulation headers (User-Agent, Referer, CORS headers)
+- Methods: send_options_preflight(), send_basic_match_list_request(), send_detailed_match_list_request(), fetch_matches_for_odds()
+- Error handling with timeouts and retries
+- Rate limiting with configurable delays
+- **CRITICAL FIX**: HKJC API uses query whitelisting - GraphQL query structure must exactly match approved format from real API. Updated to use whitelisted `matchList` query with all parameters defined (even if unused/null). See `resources/single-match-req-1.txt` for reference query.
 
-**Phases 5-10** - See `docs/project_plan.md` for full details and verification steps for each phase.
+**Phase 5 (Response Parser) - COMPLETE**
+- Implemented parse_matches_response() - validates and parses API JSON into Match models
+- Implemented filter_matches_by_rule() - filters by team/tournament/match ID
+- Implemented filter_fopools_by_odds_types() - filters odds pools by type
+- Verified: Sample response parses successfully, filters work correctly
+
+**Phase 6 (MongoDB Storage) - COMPLETE**
+- Implemented `MongoDBClient` in `src/hkjc_scrapper/db.py`
+- Three collections: `matches_current` (upserted), `odds_history` (time-series), `watch_rules` (CRUD)
+- `odds_history` created as MongoDB time-series collection (timeField=fetchedAt, metaField=matchId)
+- Indexes: status, tournament.code, matchDate on matches; compound (matchId, oddsType, fetchedAt) on odds_history; unique name on watch_rules
+- Methods: upsert_match, insert_odds_snapshot, save_matches, get_match, get_odds_history
+- Watch rules CRUD: add, get_active, get_all, get_by_name, update, enable, disable, delete
+- Reference data seeding: seed_reference_data()
+
+**Phase 6a (Watch Rules CLI) - COMPLETE**
+- Implemented CLI in `src/hkjc_scrapper/cli.py` using argparse
+- Commands: add-rule, list-rules, show-rule, enable-rule, disable-rule, delete-rule
+- Observation string parser: `"HAD,HHA:event:before_kickoff:30"` or `"CHL:continuous:300:kickoff:fulltime"`
+- Table output for list-rules, detailed output for show-rule
+
+**Testing Infrastructure - COMPLETE**
+- Added pytest, pytest-mock, and mongomock as dev dependencies
+- Created pytest.ini with three markers: default (unit), `integration` (live API), `mongodb` (real MongoDB)
+- Unit tests use mongomock (no external dependencies needed)
+- MongoDB integration tests use `hkjc_test` database with auto-cleanup
+- **Test counts**: 137 unit tests + 11 mongodb integration + 5 API integration = 153 total
+- All tests passing
+
+**Reference Data Enhancements - COMPLETE**
+- 38 odds types sourced from HKJC API description files (LB_FB_TITLE_ labels) with EN/CH translations
+- Tournament list fetched via GraphQL `tournamentList` query and stored in `tournaments_ref` collection
+- `send_tournament_list_request()` in client.py for fetching all tournaments
+- `upsert_tournaments()` in db.py - insert-if-new, update-if-exists (keyed by tournament ID)
+- `seed_odds_types()` in db.py for one-time odds type seeding
+- Documentation: `docs/odds_types.md` with full table of all supported odds types
+
+**Phase 7 (Rule-Based Scheduler) - COMPLETE**
+- `MatchScheduler` class in `src/hkjc_scrapper/scheduler.py`
+- Two-layer architecture: Discovery (periodic) + Fetch (scheduled at computed times)
+- Event mode: APScheduler `date` trigger for one-shot fetches (before_kickoff, at_kickoff, at_halftime, after_kickoff)
+- Continuous mode: APScheduler `interval` trigger between start/end events (e.g., kickoff to fulltime)
+- Deduplication: tracks scheduled keys to avoid duplicate jobs
+- Graceful shutdown via SIGINT/SIGTERM signal handlers
+- Tournament discovery integrated into each discovery cycle
+- Helper functions: `parse_kickoff_time()`, `compute_trigger_time()`, `compute_event_boundary()`
+- 20 unit tests for time computation and scheduling logic
+
+**Phase 8 (Entry Point) - COMPLETE**
+- `src/hkjc_scrapper/main.py` with argparse CLI
+- `--once` flag for single fetch cycle (useful for testing)
+- Default mode: starts discovery + scheduler loop
+- Structured logging with configurable level (LOG_LEVEL)
+- Startup info logging: MongoDB URI, endpoint, mode, active rule count
+- `__main__.py` for `python -m hkjc_scrapper` support
+
+**Phase 10 (Docker Deployment) - COMPLETE**
+- `Dockerfile` using `python:3.13-slim` + uv from `ghcr.io/astral-sh/uv:latest`
+- `docker-compose.yml` with MongoDB 8 + scrapper service
+- MongoDB health check, volume persistence, proper service dependency
+- Tested: both containers start, scrapper connects to MongoDB, discovery runs, 134 tournaments fetched
+- `.dockerignore` excludes tests, docs, IDE files from production image
+
+**Telegram Notifications - COMPLETE**
+- `TGMessageClient` in `src/hkjc_scrapper/tg_msg_client.py` using Telethon (MTProto)
+- `TELEGRAM_ENABLED` toggle in config to disable notifications without removing credentials
+- Integrated into scheduler: discovery (when jobs scheduled), fetch (when odds saved)
+- Integrated into CLI: `add-rule`, `enable-rule`, `disable-rule`, `delete-rule`, `fetch-match`
+- New CLI command: `send-message -m "..."` for one-off custom messages
+- Sync wrapper for calling async Telethon from sync scheduler/CLI code
+- All sends are fire-and-forget: failures logged but never crash the caller
+- 16 unit tests for TG client (mocked, no Telegram connection needed)
+
+**Phase 9 (Extended Testing)** - See `docs/project_plan.md` for details.
 
 ## Coding Conventions
 
@@ -180,7 +265,7 @@ Note: `POLL_INTERVAL_SECONDS` and `ODDS_TYPES` are no longer global — they are
 - **Entry point**: `uv run python -m hkjc_scrapper.main` (the `__main__` pattern)
 - **No over-engineering**: Keep it simple. Only implement what's needed for the current phase.
 - **Error handling**: Log and continue on transient API failures; don't crash the polling loop.
-- **Fields**: Use snake_case for Python attributes. The API uses camelCase - handle mapping in Pydantic models via aliases or field renaming.
+- **Fields**: Use snake_case for Python attributes. The HKJC API also uses snake_case (name_en, name_ch), so no aliases needed for most fields. Some fields use camelCase (frontEndId, kickOffTime) - these are used as-is in both API and models.
 
 ## Session Notes
 
@@ -194,4 +279,19 @@ Note: `POLL_INTERVAL_SECONDS` and `ODDS_TYPES` are no longer global — they are
 - **Scheduler redesign**: Two-layer architecture. Layer 1 (Discovery) runs periodically to find matches matching rules. Layer 2 (Fetch jobs) are scheduled at computed times using APScheduler date/interval triggers.
 - **MongoDB 8.2 installed locally**: Development uses local MongoDB 8.2. Design must support migration to cloud-hosted MongoDB (e.g. Atlas) later — connection string is already configurable via `MONGODB_URI` env var. Data migration will be needed when moving to cloud.
 - **Docs structure**: `docs/project_modules_high_level.md` = high-level 4-module roadmap. `docs/project_plan.md` = detailed Module I implementation phases with verification steps.
-- **Reference data system**: User requested enums/lookups for odds types and tournaments. Implemented as: (1) Python Enums in models.py for validation, (2) Pydantic reference models (OddsTypeReference, TournamentReference), (3) Seed data in reference_data.py with 18 odds types and 8 tournaments. Will be stored in MongoDB `odds_types_ref` and `tournaments_ref` collections for querying from dashboards/analytics.
+- **Reference data system**: Implemented as: (1) Python Enums in models.py for validation, (2) Pydantic reference models (OddsTypeReference, TournamentReference), (3) Seed data in reference_data.py with 38 odds types (from HKJC LB_FB_TITLE_ labels) and 8 tournaments. Stored in MongoDB `odds_types_ref` and `tournaments_ref` collections. Tournament data also auto-fetched from HKJC `tournamentList` GraphQL query and upserted by tournament ID.
+- **HKJC API Query Whitelisting Discovery**: Integration tests initially failed with "query isn't whitelisted" error. Discovered HKJC API doesn't accept arbitrary GraphQL queries - only specific pre-approved query structures. Solution: Use exact query format from real API request (see `resources/single-match-req-1.txt`), including ALL parameters defined in query signature even if passed as null/unused. The whitelisted query has ~13 parameters (startIndex, endIndex, startDate, endDate, matchIds, tournIds, fbOddsTypes, fbOddsTypesM, inplayOnly, featuredMatchesOnly, frontEndIds, earlySettlementOnly, showAllMatch). All client methods now use this single whitelisted query format.
+- **API Field Naming**: Initially assumed HKJC API used camelCase (nameEn, nameCh). Real API uses snake_case (name_en, name_ch) for most fields. Some fields like frontEndId, kickOffTime use camelCase. Models updated accordingly. Added new models: Venue, LiveEvent, NgsInfo, AgsInfo, Remark, AdminOperation to handle all fields in real API response.
+- **Real API Samples**: User provided actual API request/response samples in `resources/` directory (`single-match-req-1.txt`, `single-match-res-1.json`). These are the authoritative reference for query structure and response format. Integration tests now successfully fetch live data from HKJC API (tested with 81 matches).
+- **MongoDB Testing Strategy**: User chose "both approaches" for testing: (1) mongomock for unit tests (fast, no external dependency), (2) real MongoDB with `hkjc_test` database for integration tests (supports time-series collections, real indexes). Tests marked with `@pytest.mark.mongodb` for the real DB tests.
+- **Phase 6 MongoDB Implementation**: Implemented MongoDBClient with three collections. `odds_history` uses MongoDB time-series collection (timeField=fetchedAt, metaField=matchId, granularity=minutes). All timestamps stored as UTC. `save_matches()` does both match upsert and odds history append in one call. Reference data seeding uses upsert to be idempotent.
+- **Phase 6a CLI Implementation**: Watch rules CLI uses argparse with subcommands. Observation string format: `"ODDS:MODE:DETAILS"` where MODE is `event` or `continuous`. Example: `"HAD,HHA:event:before_kickoff:30"` means "fetch HAD and HHA odds 30 minutes before kickoff". CLI connects to MongoDB on each invocation (stateless).
+- **Odds Types from HKJC API**: Extracted 38 odds type translations from HKJC frontend `LB_FB_TITLE_` labels in `description-en-res.json` and `description-ch-res.json`. Includes standard, corner, goal scorer, extra time, and tournament special odds. Full table in `docs/odds_types.md`.
+- **Tournament List API**: HKJC has a separate `tournamentList` GraphQL query (whitelisted, no parameters needed) that returns all available tournaments with ID, code, name_en, name_ch. Stored in `tournaments_ref` collection keyed by tournament ID. Note: same tournament code (e.g., "EPL") can have multiple entries with different IDs (different seasons).
+- **Tournament Discovery**: `upsert_tournaments()` in db.py uses `$setOnInsert` for `createdAt` to only set on first insert, and `$set` for all other fields. This means existing tournaments get their names/metadata updated but retain their creation timestamp. Called during each scheduler discovery cycle.
+- **Phase 7 Scheduler Implementation**: Two-layer `MatchScheduler` class. Layer 1 (Discovery) runs every `DISCOVERY_INTERVAL_SECONDS`, fetches basic match list, evaluates watch rules, computes absolute trigger times from kickoff + trigger event, and schedules APScheduler jobs. Layer 2 (Fetch) executes at scheduled times: calls API with specific odds types, finds the target match in response, saves to DB. Key design decisions: (1) Dedup via `_scheduled_keys` set prevents duplicate scheduling, (2) Past triggers are silently skipped, (3) Continuous mode adjusts start_time to `now` if already past, (4) fulltime estimated as kickoff + 105min (90min + 15min buffer).
+- **Phase 8 Entry Point**: `main.py` uses argparse with `--once` flag. Service mode sets up SIGINT/SIGTERM handlers and blocks on `scheduler.wait()`. Single-fetch mode (`run_once`) collects all odds types across all matched rules, makes one API call with all needed odds types, filters to matched matches, and saves. This minimizes API calls in one-shot mode.
+- **Milestone 2 Reached**: Full rule-based pipeline running end-to-end: watch rules -> discovery -> scheduled fetches -> MongoDB storage. Can run as service or single-shot.
+- **Phase 10 Docker**: Dockerfile uses multi-step uv install for layer caching (deps first, then source). `docker-compose.yml` uses `mongo:8` with health check — scrapper waits for MongoDB to be healthy before starting. Data persists in `mongodb_data` Docker volume. CLI commands work via `docker compose exec scrapper uv run python -m hkjc_scrapper.cli ...`.
+- **Ad-hoc CLI Commands**: Added `list-matches` (browse live matches from API), `fetch-match` (fetch + save specific match odds), `get-match` (query stored match from DB), `get-odds` (query odds history with time filters: `--latest`, `--before-kickoff`, `--all`, `--last N`). Total CLI commands: 10. Total unit tests: 121.
+- **Telegram Integration**: `TGMessageClient` wraps Telethon with sync/async interfaces. `TELEGRAM_ENABLED` toggle in Settings. Integrated into: (1) scheduler — discovery notifications when jobs scheduled, fetch notifications when odds saved, (2) CLI — `add-rule`, `enable-rule`, `disable-rule`, `delete-rule`, `fetch-match` send TG notifications, (3) new `send-message` CLI command for custom one-off messages. All sends are fire-and-forget (failures logged, never crash). Uses HTML formatting for structured messages. Session file named via `TELEGRAM_SESSION_NAME` setting. Total CLI commands: 11. Total unit tests: 137.

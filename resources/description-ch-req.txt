@@ -1,0 +1,15 @@
+curl 'https://bet.hkjc.com/assets/i18n/translations/ch.json' \
+  -H 'accept: */*' \
+  -H 'accept-language: zh-HK,zh;q=0.9,en-US;q=0.8,en;q=0.7,zh-TW;q=0.6' \
+  -H 'cache-control: no-cache' \
+  -b 'language=ch; _cls_v=200db758-2704-43c5-95a3-39ddb23e7463; personalSettings={racing:{WIN:10%2CPLA:10%2CW-P:10%2CQIN:10%2CQPL:10%2CQQP:10%2CCW:10%2CIWN:100%2CFCT:10%2CTCE:10%2CTRI:10%2CFF:10%2CQTT:10%2CDBL:10%2CTBL:10%2CDT:10%2CTT:10%2C6UP:10%2CJKC:10%2CTNC:10%2CALUP:10}%2Cfootball:{ALUP:10%2CSGA:10%2CHAD:10%2CTQL:10%2CFHA:10%2CHHA:10%2CHDC:200%2CFHH:200%2CHIL:10%2CFHL:10%2CCHL:10%2CFCH:10%2CCHD:10%2CFHC:10%2CNTS:10%2CCRS:10%2CFCS:10%2CFTS:10%2CTTG:10%2COOE:10%2CFGS:10%2CNGS:10%2CLGS:10%2CAGS:10%2CHFT:10%2CMSP:10%2CGPW:10%2CGPF:10%2CTPS:10%2CCHP:10}%2Cm6MulDrow:1%2CaccountInfo:{accountName:0%2CaccountBalance:0}%2CallUpSetting:1%2CracingNotes:1%2CshowBetlineDetail:0}; DefAmtHB=WIN:10%2CPLA:10%2CW-P:10%2CQIN:10%2CQPL:10%2CQQP:10%2CCW:10%2CCWA:10%2CCWB:10%2CCWC:10%2CIWN:100%2CFCT:10%2CTCE:10%2CTRI:10%2CF-F:10%2CQTT:10%2CDBL:10%2CTBL:10%2CD-T:10%2CT-T:10%2C6UP:10%2CJKC:10%2CTNC:10%2CALUPX:10; DefAmtSB=ALUPX:10%2CSGA:10%2CHAD:10%2CTQL:10%2CFHA:10%2CHHA:10%2CHDC:200%2CFHH:200%2CHIL:10%2CFHL:10%2CCHL:10%2CFCH:10%2CCHD:10%2CFHC:10%2CNTS:10%2CCRS:10%2CFCS:10%2CFTS:10%2CTTG:10%2COOE:10%2CFGS:10%2CNGS:10%2CLGS:10%2CAGS:10%2CHFT:10%2CMSP:10%2CGPW:10%2CGPF:10%2CTPS:10%2CCHP:10; M6DrawNo=1; AccInfo=0%2C0; AlupSetting=1; showPeNote=1; showBetlineDetail=0; AMCV_06AB2C1653DB07AD0A490D4B%40AdobeOrg=1585540135%7CMCMID%7C13545738949836996330594964689534924245%7CMCIDTS%7C20504%7CMCAID%7CNONE%7CMCOPTOUT-1771520415s%7CNONE%7CMCAAMLH-1772118015%7C3%7CMCAAMB-1772118015%7Cj8Odv6LonN4r3an7LhD3WZrU1bUpAkFkkiY1ncBR96t2PTI%7CMCCIDH%7C1956294461%7CvVersion%7C4.4.0; isEU=false; kndctr_06AB2C1653DB07AD0A490D4B_AdobeOrg_identity=CiYxMzU0NTczODk0OTgzNjk5NjMzMDU5NDk2NDY4OTUzNDkyNDI0NVITCJqkprPHMxABGAEqBEpQTjMwAPAB0YXwxswz; kndctr_06AB2C1653DB07AD0A490D4B_AdobeOrg_cluster=jpn3; landing=https://bet.hkjc.com/; _cls_s=121840a4-0124-49a2-88e6-28bf6f59fe7f:1; s_gpv_url=https://bet.hkjc.com/ch/football/allodds/50063496; s_gpv_url2=https://bet.hkjc.com/ch/football/allodds/50063496; banner_vid=68dda319-9eb1-467e-9bae-250609ee6f88; _dd_s=aid=ec68c6e0-685b-4ddf-8ef2-6a340cabb870&rum=0&expire=1772897327921' \
+  -H 'pragma: no-cache' \
+  -H 'priority: u=1, i' \
+  -H 'referer: https://bet.hkjc.com/ch/football/allodds/50063496' \
+  -H 'sec-ch-ua: "Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "macOS"' \
+  -H 'sec-fetch-dest: empty' \
+  -H 'sec-fetch-mode: cors' \
+  -H 'sec-fetch-site: same-origin' \
+  -H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36'

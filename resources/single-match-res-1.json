@@ -1,0 +1,3572 @@
+{
+    "data": {
+        "matches": [
+            {
+                "id": "50062141",
+                "frontEndId": "FB4233",
+                "matchDate": "2026-02-22+08:00",
+                "kickOffTime": "2026-02-22T22:00:00.000+08:00",
+                "status": "FIRSTHALF",
+                "updateAt": "2026-02-22T22:00:13.727+08:00",
+                "sequence": "1.1771768800.12.Eng Premier                                                                                                                     .0.99.Nottingham Forest                                                                                                               .000",
+                "esIndicatorEnabled": true,
+                "homeTeam": {
+                    "id": "50002302",
+                    "name_en": "Nottingham Forest",
+                    "name_ch": "諾定咸森林"
+                },
+                "awayTeam": {
+                    "id": "50001928",
+                    "name_en": "Liverpool",
+                    "name_ch": "利物浦"
+                },
+                "tournament": {
+                    "id": "50050013",
+                    "frontEndId": "FB3397",
+                    "nameProfileId": "50000051",
+                    "isInteractiveServiceAvailable": true,
+                    "code": "EPL",
+                    "name_en": "Eng Premier",
+                    "name_ch": "英格蘭超級聯賽"
+                },
+                "isInteractiveServiceAvailable": true,
+                "inplayDelay": true,
+                "venue": null,
+                "tvChannels": [
+                    {
+                        "code": "621",
+                        "name_en": "Now 621",
+                        "name_ch": "Now 621"
+                    }
+                ],
+                "liveEvents": [
+                    {
+                        "id": "61301051",
+                        "code": "BETRADAR"
+                    }
+                ],
+                "featureStartTime": "",
+                "featureMatchSequence": "",
+                "poolInfo": {
+                    "normalPools": [
+                        "FHA",
+                        "HIL",
+                        "FCH",
+                        "CRS",
+                        "HAD",
+                        "FHL",
+                        "FHH",
+                        "TTG",
+                        "FCS",
+                        "CHL",
+                        "HHA",
+                        "CHD",
+                        "AGS",
+                        "NTS1",
+                        "FHC",
+                        "NGS1",
+                        "HDC"
+                    ],
+                    "inplayPools": [
+                        "FHA",
+                        "HIL",
+                        "FCH",
+                        "CRS",
+                        "HAD",
+                        "FHL",
+                        "FHH",
+                        "TTG",
+                        "FCS",
+                        "CHL",
+                        "HHA",
+                        "CHD",
+                        "AGS",
+                        "NTS1",
+                        "FHC",
+                        "NGS1",
+                        "HDC"
+                    ],
+                    "sellingPools": [
+                        "FHA",
+                        "HIL",
+                        "FCH",
+                        "CRS",
+                        "HAD",
+                        "FHL",
+                        "FHH",
+                        "TTG",
+                        "FCS",
+                        "CHL",
+                        "HHA",
+                        "CHD",
+                        "NTS1",
+                        "FHC",
+                        "HDC"
+                    ],
+                    "ntsInfo": [],
+                    "entInfo": [],
+                    "definedPools": [
+                        "SGA9",
+                        "MSP5",
+                        "FTS",
+                        "FHA",
+                        "SGA18",
+                        "SGA13",
+                        "MSP1",
+                        "SGA5",
+                        "SGA1",
+                        "MSP2",
+                        "HIL",
+                        "SGA15",
+                        "SGA14",
+                        "SGA6",
+                        "MSP4",
+                        "SGA2",
+                        "FCH",
+                        "CRS",
+                        "HAD",
+                        "FGS",
+                        "SGA10",
+                        "OOE",
+                        "SGA7",
+                        "HFT",
+                        "FHL",
+                        "SGA16",
+                        "FHH",
+                        "MSP3",
+                        "SGA20",
+                        "LGS",
+                        "TTG",
+                        "SGA11",
+                        "SGA3",
+                        "FCS",
+                        "CHL",
+                        "SGA8",
+                        "HHA",
+                        "CHD",
+                        "AGS",
+                        "NTS1",
+                        "SGA17",
+                        "FHC",
+                        "SGA4",
+                        "NGS1",
+                        "HDC",
+                        "SGA19",
+                        "SGA12"
+                    ],
+                    "ngsInfo": [],
+                    "agsInfo": []
+                },
+                "runningResult": null,
+                "runningResultExtra": null,
+                "adminOperation": {
+                    "remark": null
+                },
+                "foPools": [
+                    {
+                        "id": "1465019001",
+                        "status": "SELLINGSTARTED",
+                        "oddsType": "HAD",
+                        "instNo": 0,
+                        "inplay": true,
+                        "name_ch": "",
+                        "name_en": "",
+                        "updateAt": "2026-02-20T12:00:10.251+08:00",
+                        "expectedSuspendDateTime": "",
+                        "lines": [
+                            {
+                                "lineId": "0",
+                                "status": "AVAILABLE",
+                                "condition": "0.0",
+                                "main": true,
+                                "combinations": [
+                                    {
+                                        "combId": "1",
+                                        "str": "H",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "3.60",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "H",
+                                                "name_ch": "主隊勝",
+                                                "name_en": "Home"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "2",
+                                        "str": "A",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1.77",
+                                        "selections": [
+                                            {
+                                                "selId": "2",
+                                                "str": "A",
+                                                "name_ch": "客隊勝",
+                                                "name_en": "Away"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "3",
+                                        "str": "D",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "3.50",
+                                        "selections": [
+                                            {
+                                                "selId": "3",
+                                                "str": "D",
+                                                "name_ch": "和",
+                                                "name_en": "Draw"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "1465020002",
+                        "status": "SELLINGSTARTED",
+                        "oddsType": "FHA",
+                        "instNo": 0,
+                        "inplay": true,
+                        "name_ch": "",
+                        "name_en": "",
+                        "updateAt": "2026-02-20T12:00:10.251+08:00",
+                        "expectedSuspendDateTime": "",
+                        "lines": [
+                            {
+                                "lineId": "0",
+                                "status": "AVAILABLE",
+                                "condition": "0.0",
+                                "main": true,
+                                "combinations": [
+                                    {
+                                        "combId": "1",
+                                        "str": "H",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "4.15",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "H",
+                                                "name_ch": "主隊勝",
+                                                "name_en": "Home"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "2",
+                                        "str": "A",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "2.28",
+                                        "selections": [
+                                            {
+                                                "selId": "2",
+                                                "str": "A",
+                                                "name_ch": "客隊勝",
+                                                "name_en": "Away"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "3",
+                                        "str": "D",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "2.17",
+                                        "selections": [
+                                            {
+                                                "selId": "3",
+                                                "str": "D",
+                                                "name_ch": "和",
+                                                "name_en": "Draw"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "1465025007",
+                        "status": "SELLINGSTARTED",
+                        "oddsType": "HHA",
+                        "instNo": 0,
+                        "inplay": true,
+                        "name_ch": "",
+                        "name_en": "",
+                        "updateAt": "2026-02-20T12:00:10.251+08:00",
+                        "expectedSuspendDateTime": "",
+                        "lines": [
+                            {
+                                "lineId": "1",
+                                "status": "AVAILABLE",
+                                "condition": "+1.0",
+                                "main": true,
+                                "combinations": [
+                                    {
+                                        "combId": "1",
+                                        "str": "H",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1.93",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "H",
+                                                "name_ch": "主隊勝",
+                                                "name_en": "Home"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "2",
+                                        "str": "A",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "2.96",
+                                        "selections": [
+                                            {
+                                                "selId": "2",
+                                                "str": "A",
+                                                "name_ch": "客隊勝",
+                                                "name_en": "Away"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "3",
+                                        "str": "D",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "3.55",
+                                        "selections": [
+                                            {
+                                                "selId": "3",
+                                                "str": "D",
+                                                "name_ch": "和",
+                                                "name_en": "Draw"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "lineId": "2",
+                                "status": "AVAILABLE",
+                                "condition": "+2.0",
+                                "main": false,
+                                "combinations": [
+                                    {
+                                        "combId": "1",
+                                        "str": "H",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1.29",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "H",
+                                                "name_ch": "主隊勝",
+                                                "name_en": "Home"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "2",
+                                        "str": "A",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "6.00",
+                                        "selections": [
+                                            {
+                                                "selId": "2",
+                                                "str": "A",
+                                                "name_ch": "客隊勝",
+                                                "name_en": "Away"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "3",
+                                        "str": "D",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "5.00",
+                                        "selections": [
+                                            {
+                                                "selId": "3",
+                                                "str": "D",
+                                                "name_ch": "和",
+                                                "name_en": "Draw"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "1465024006",
+                        "status": "SELLINGSTARTED",
+                        "oddsType": "HDC",
+                        "instNo": 0,
+                        "inplay": true,
+                        "name_ch": "",
+                        "name_en": "",
+                        "updateAt": "2026-02-20T12:00:10.251+08:00",
+                        "expectedSuspendDateTime": "",
+                        "lines": [
+                            {
+                                "lineId": "1",
+                                "status": "AVAILABLE",
+                                "condition": "+0.5/+1.0",
+                                "main": true,
+                                "combinations": [
+                                    {
+                                        "combId": "1",
+                                        "str": "H",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1.65",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "H",
+                                                "name_ch": "主隊勝",
+                                                "name_en": "Home"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "2",
+                                        "str": "A",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "2.13",
+                                        "selections": [
+                                            {
+                                                "selId": "2",
+                                                "str": "A",
+                                                "name_ch": "客隊勝",
+                                                "name_en": "Away"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "1465021003",
+                        "status": "SELLINGSTARTED",
+                        "oddsType": "HIL",
+                        "instNo": 0,
+                        "inplay": true,
+                        "name_ch": "",
+                        "name_en": "",
+                        "updateAt": "2026-02-20T12:00:10.251+08:00",
+                        "expectedSuspendDateTime": "",
+                        "lines": [
+                            {
+                                "lineId": "1",
+                                "status": "AVAILABLE",
+                                "condition": "2.5",
+                                "main": true,
+                                "combinations": [
+                                    {
+                                        "combId": "1",
+                                        "str": "H",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1.70",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "H",
+                                                "name_ch": "大",
+                                                "name_en": "High"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "2",
+                                        "str": "L",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "2.02",
+                                        "selections": [
+                                            {
+                                                "selId": "2",
+                                                "str": "L",
+                                                "name_ch": "細",
+                                                "name_en": "Low"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "lineId": "2",
+                                "status": "AVAILABLE",
+                                "condition": "2.5/3.0",
+                                "main": false,
+                                "combinations": [
+                                    {
+                                        "combId": "1",
+                                        "str": "H",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1.88",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "H",
+                                                "name_ch": "大",
+                                                "name_en": "High"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "2",
+                                        "str": "L",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1.82",
+                                        "selections": [
+                                            {
+                                                "selId": "2",
+                                                "str": "L",
+                                                "name_ch": "細",
+                                                "name_en": "Low"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "lineId": "3",
+                                "status": "AVAILABLE",
+                                "condition": "3.5",
+                                "main": false,
+                                "combinations": [
+                                    {
+                                        "combId": "1",
+                                        "str": "H",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "2.75",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "H",
+                                                "name_ch": "大",
+                                                "name_en": "High"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "2",
+                                        "str": "L",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1.38",
+                                        "selections": [
+                                            {
+                                                "selId": "2",
+                                                "str": "L",
+                                                "name_ch": "細",
+                                                "name_en": "Low"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "1465022004",
+                        "status": "SELLINGSTARTED",
+                        "oddsType": "FHL",
+                        "instNo": 0,
+                        "inplay": true,
+                        "name_ch": "",
+                        "name_en": "",
+                        "updateAt": "2026-02-20T12:00:10.251+08:00",
+                        "expectedSuspendDateTime": "",
+                        "lines": [
+                            {
+                                "lineId": "1",
+                                "status": "AVAILABLE",
+                                "condition": "1.5",
+                                "main": true,
+                                "combinations": [
+                                    {
+                                        "combId": "1",
+                                        "str": "H",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "2.58",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "H",
+                                                "name_ch": "大",
+                                                "name_en": "High"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "2",
+                                        "str": "L",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1.44",
+                                        "selections": [
+                                            {
+                                                "selId": "2",
+                                                "str": "L",
+                                                "name_ch": "細",
+                                                "name_en": "Low"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "lineId": "4",
+                                "status": "AVAILABLE",
+                                "condition": "0.5/1.0",
+                                "main": false,
+                                "combinations": [
+                                    {
+                                        "combId": "1",
+                                        "str": "H",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1.43",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "H",
+                                                "name_ch": "大",
+                                                "name_en": "High"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "2",
+                                        "str": "L",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "2.60",
+                                        "selections": [
+                                            {
+                                                "selId": "2",
+                                                "str": "L",
+                                                "name_ch": "細",
+                                                "name_en": "Low"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "lineId": "5",
+                                "status": "AVAILABLE",
+                                "condition": "1.0/1.5",
+                                "main": false,
+                                "combinations": [
+                                    {
+                                        "combId": "1",
+                                        "str": "H",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "2.13",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "H",
+                                                "name_ch": "大",
+                                                "name_en": "High"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "2",
+                                        "str": "L",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1.63",
+                                        "selections": [
+                                            {
+                                                "selId": "2",
+                                                "str": "L",
+                                                "name_ch": "細",
+                                                "name_en": "Low"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "lineId": "2",
+                                "status": "SUSPENDED",
+                                "condition": "1.5/2.0",
+                                "main": false,
+                                "combinations": [
+                                    {
+                                        "combId": "1",
+                                        "str": "H",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "2.75",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "H",
+                                                "name_ch": "大",
+                                                "name_en": "High"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "2",
+                                        "str": "L",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1.38",
+                                        "selections": [
+                                            {
+                                                "selId": "2",
+                                                "str": "L",
+                                                "name_ch": "細",
+                                                "name_en": "Low"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "lineId": "3",
+                                "status": "SUSPENDED",
+                                "condition": "2.5",
+                                "main": false,
+                                "combinations": [
+                                    {
+                                        "combId": "1",
+                                        "str": "H",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "4.75",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "H",
+                                                "name_ch": "大",
+                                                "name_en": "High"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "2",
+                                        "str": "L",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1.13",
+                                        "selections": [
+                                            {
+                                                "selId": "2",
+                                                "str": "L",
+                                                "name_ch": "細",
+                                                "name_en": "Low"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "1465023005",
+                        "status": "SELLINGSTARTED",
+                        "oddsType": "CHL",
+                        "instNo": 0,
+                        "inplay": true,
+                        "name_ch": "",
+                        "name_en": "",
+                        "updateAt": "2026-02-20T12:00:10.251+08:00",
+                        "expectedSuspendDateTime": "",
+                        "lines": [
+                            {
+                                "lineId": "1",
+                                "status": "AVAILABLE",
+                                "condition": "10.5",
+                                "main": true,
+                                "combinations": [
+                                    {
+                                        "combId": "1",
+                                        "str": "H",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1.97",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "H",
+                                                "name_ch": "大",
+                                                "name_en": "High"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "2",
+                                        "str": "L",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1.74",
+                                        "selections": [
+                                            {
+                                                "selId": "2",
+                                                "str": "L",
+                                                "name_ch": "細",
+                                                "name_en": "Low"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "lineId": "2",
+                                "status": "AVAILABLE",
+                                "condition": "11.5",
+                                "main": false,
+                                "combinations": [
+                                    {
+                                        "combId": "1",
+                                        "str": "H",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "2.58",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "H",
+                                                "name_ch": "大",
+                                                "name_en": "High"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "2",
+                                        "str": "L",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1.44",
+                                        "selections": [
+                                            {
+                                                "selId": "2",
+                                                "str": "L",
+                                                "name_ch": "細",
+                                                "name_en": "Low"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "lineId": "4",
+                                "status": "AVAILABLE",
+                                "condition": "12.5",
+                                "main": false,
+                                "combinations": [
+                                    {
+                                        "combId": "1",
+                                        "str": "H",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "3.35",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "H",
+                                                "name_ch": "大",
+                                                "name_en": "High"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "2",
+                                        "str": "L",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1.27",
+                                        "selections": [
+                                            {
+                                                "selId": "2",
+                                                "str": "L",
+                                                "name_ch": "細",
+                                                "name_en": "Low"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "lineId": "3",
+                                "status": "SUSPENDED",
+                                "condition": "14.5",
+                                "main": false,
+                                "combinations": [
+                                    {
+                                        "combId": "1",
+                                        "str": "H",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "5.15",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "H",
+                                                "name_ch": "大",
+                                                "name_en": "High"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "2",
+                                        "str": "L",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1.11",
+                                        "selections": [
+                                            {
+                                                "selId": "2",
+                                                "str": "L",
+                                                "name_ch": "細",
+                                                "name_en": "Low"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "1465033045",
+                        "status": "SELLINGSTARTED",
+                        "oddsType": "FCH",
+                        "instNo": 0,
+                        "inplay": true,
+                        "name_ch": "",
+                        "name_en": "",
+                        "updateAt": "2026-02-20T12:00:10.251+08:00",
+                        "expectedSuspendDateTime": "",
+                        "lines": [
+                            {
+                                "lineId": "1",
+                                "status": "AVAILABLE",
+                                "condition": "4.5",
+                                "main": true,
+                                "combinations": [
+                                    {
+                                        "combId": "1",
+                                        "str": "H",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1.90",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "H",
+                                                "name_ch": "大",
+                                                "name_en": "High"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "2",
+                                        "str": "L",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1.80",
+                                        "selections": [
+                                            {
+                                                "selId": "2",
+                                                "str": "L",
+                                                "name_ch": "細",
+                                                "name_en": "Low"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "lineId": "2",
+                                "status": "AVAILABLE",
+                                "condition": "5.5",
+                                "main": false,
+                                "combinations": [
+                                    {
+                                        "combId": "1",
+                                        "str": "H",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "2.80",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "H",
+                                                "name_ch": "大",
+                                                "name_en": "High"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "2",
+                                        "str": "L",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1.37",
+                                        "selections": [
+                                            {
+                                                "selId": "2",
+                                                "str": "L",
+                                                "name_ch": "細",
+                                                "name_en": "Low"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "lineId": "3",
+                                "status": "AVAILABLE",
+                                "condition": "6.5",
+                                "main": false,
+                                "combinations": [
+                                    {
+                                        "combId": "1",
+                                        "str": "H",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "4.30",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "H",
+                                                "name_ch": "大",
+                                                "name_en": "High"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "2",
+                                        "str": "L",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1.16",
+                                        "selections": [
+                                            {
+                                                "selId": "2",
+                                                "str": "L",
+                                                "name_ch": "細",
+                                                "name_en": "Low"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "lineId": "4",
+                                "status": "SUSPENDED",
+                                "condition": "7.5",
+                                "main": false,
+                                "combinations": [
+                                    {
+                                        "combId": "1",
+                                        "str": "H",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "5.15",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "H",
+                                                "name_ch": "大",
+                                                "name_en": "High"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "2",
+                                        "str": "L",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1.11",
+                                        "selections": [
+                                            {
+                                                "selId": "2",
+                                                "str": "L",
+                                                "name_ch": "細",
+                                                "name_en": "Low"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "1465027009",
+                        "status": "SELLINGSTARTED",
+                        "oddsType": "CRS",
+                        "instNo": 0,
+                        "inplay": true,
+                        "name_ch": "",
+                        "name_en": "",
+                        "updateAt": "2026-02-20T12:00:10.251+08:00",
+                        "expectedSuspendDateTime": "",
+                        "lines": [
+                            {
+                                "lineId": "0",
+                                "status": "AVAILABLE",
+                                "condition": "0.0",
+                                "main": true,
+                                "combinations": [
+                                    {
+                                        "combId": "11",
+                                        "str": "05:01",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "250.0",
+                                        "selections": [
+                                            {
+                                                "selId": "11",
+                                                "str": "5:1",
+                                                "name_ch": "5:1",
+                                                "name_en": "5:1"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "10",
+                                        "str": "05:00",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "400.0",
+                                        "selections": [
+                                            {
+                                                "selId": "10",
+                                                "str": "5:0",
+                                                "name_ch": "5:0",
+                                                "name_en": "5:0"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "12",
+                                        "str": "05:02",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "350.0",
+                                        "selections": [
+                                            {
+                                                "selId": "12",
+                                                "str": "5:2",
+                                                "name_ch": "5:2",
+                                                "name_en": "5:2"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "13",
+                                        "str": "HO",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "80.00",
+                                        "selections": [
+                                            {
+                                                "selId": "13",
+                                                "str": "HOAS",
+                                                "name_ch": "主其他(客有入球)",
+                                                "name_en": "Home Others (Away Scores)"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "14",
+                                        "str": "00:01",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "7.40",
+                                        "selections": [
+                                            {
+                                                "selId": "14",
+                                                "str": "0:1",
+                                                "name_ch": "0:1",
+                                                "name_en": "0:1"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "15",
+                                        "str": "00:02",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "8.50",
+                                        "selections": [
+                                            {
+                                                "selId": "15",
+                                                "str": "0:2",
+                                                "name_ch": "0:2",
+                                                "name_en": "0:2"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "16",
+                                        "str": "01:02",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "6.90",
+                                        "selections": [
+                                            {
+                                                "selId": "16",
+                                                "str": "1:2",
+                                                "name_ch": "1:2",
+                                                "name_en": "1:2"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "17",
+                                        "str": "00:03",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "13.00",
+                                        "selections": [
+                                            {
+                                                "selId": "17",
+                                                "str": "0:3",
+                                                "name_ch": "0:3",
+                                                "name_en": "0:3"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "18",
+                                        "str": "01:03",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "12.00",
+                                        "selections": [
+                                            {
+                                                "selId": "18",
+                                                "str": "1:3",
+                                                "name_ch": "1:3",
+                                                "name_en": "1:3"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "19",
+                                        "str": "02:03",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "21.00",
+                                        "selections": [
+                                            {
+                                                "selId": "19",
+                                                "str": "2:3",
+                                                "name_ch": "2:3",
+                                                "name_en": "2:3"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "30",
+                                        "str": "03:03",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "40.00",
+                                        "selections": [
+                                            {
+                                                "selId": "30",
+                                                "str": "3:3",
+                                                "name_ch": "3:3",
+                                                "name_en": "3:3"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "31",
+                                        "str": "DO",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "150.0",
+                                        "selections": [
+                                            {
+                                                "selId": "31",
+                                                "str": "DO",
+                                                "name_ch": "和其他",
+                                                "name_en": "Draw Others"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "32",
+                                        "str": "OHN",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "900.0",
+                                        "selections": [
+                                            {
+                                                "selId": "32",
+                                                "str": "HOAN",
+                                                "name_ch": "主其他(客無入球)",
+                                                "name_en": "Home Others (Away No Goal)"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "33",
+                                        "str": "OAN",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "125.0",
+                                        "selections": [
+                                            {
+                                                "selId": "33",
+                                                "str": "AOHN",
+                                                "name_ch": "客其他(主無入球)",
+                                                "name_en": "Away Others (Home No Goal)"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "20",
+                                        "str": "00:04",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "29.00",
+                                        "selections": [
+                                            {
+                                                "selId": "20",
+                                                "str": "0:4",
+                                                "name_ch": "0:4",
+                                                "name_en": "0:4"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "21",
+                                        "str": "01:04",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "27.00",
+                                        "selections": [
+                                            {
+                                                "selId": "21",
+                                                "str": "1:4",
+                                                "name_ch": "1:4",
+                                                "name_en": "1:4"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "22",
+                                        "str": "02:04",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "45.00",
+                                        "selections": [
+                                            {
+                                                "selId": "22",
+                                                "str": "2:4",
+                                                "name_ch": "2:4",
+                                                "name_en": "2:4"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "23",
+                                        "str": "00:05",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "60.00",
+                                        "selections": [
+                                            {
+                                                "selId": "23",
+                                                "str": "0:5",
+                                                "name_ch": "0:5",
+                                                "name_en": "0:5"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "24",
+                                        "str": "01:05",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "60.00",
+                                        "selections": [
+                                            {
+                                                "selId": "24",
+                                                "str": "1:5",
+                                                "name_ch": "1:5",
+                                                "name_en": "1:5"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "25",
+                                        "str": "02:05",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "80.00",
+                                        "selections": [
+                                            {
+                                                "selId": "25",
+                                                "str": "2:5",
+                                                "name_ch": "2:5",
+                                                "name_en": "2:5"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "26",
+                                        "str": "AO",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "45.00",
+                                        "selections": [
+                                            {
+                                                "selId": "26",
+                                                "str": "AOHS",
+                                                "name_ch": "客其他(主有入球)",
+                                                "name_en": "Away Others (Home Scores)"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "27",
+                                        "str": "00:00",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "12.50",
+                                        "selections": [
+                                            {
+                                                "selId": "27",
+                                                "str": "0:0",
+                                                "name_ch": "0:0",
+                                                "name_en": "0:0"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "28",
+                                        "str": "01:01",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "6.60",
+                                        "selections": [
+                                            {
+                                                "selId": "28",
+                                                "str": "1:1",
+                                                "name_ch": "1:1",
+                                                "name_en": "1:1"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "29",
+                                        "str": "02:02",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "12.00",
+                                        "selections": [
+                                            {
+                                                "selId": "29",
+                                                "str": "2:2",
+                                                "name_ch": "2:2",
+                                                "name_en": "2:2"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "1",
+                                        "str": "01:00",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "12.00",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "1:0",
+                                                "name_ch": "1:0",
+                                                "name_en": "1:0"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "2",
+                                        "str": "02:00",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "21.00",
+                                        "selections": [
+                                            {
+                                                "selId": "2",
+                                                "str": "2:0",
+                                                "name_ch": "2:0",
+                                                "name_en": "2:0"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "3",
+                                        "str": "02:01",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "11.50",
+                                        "selections": [
+                                            {
+                                                "selId": "3",
+                                                "str": "2:1",
+                                                "name_ch": "2:1",
+                                                "name_en": "2:1"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "4",
+                                        "str": "03:00",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "40.00",
+                                        "selections": [
+                                            {
+                                                "selId": "4",
+                                                "str": "3:0",
+                                                "name_ch": "3:0",
+                                                "name_en": "3:0"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "5",
+                                        "str": "03:01",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "29.00",
+                                        "selections": [
+                                            {
+                                                "selId": "5",
+                                                "str": "3:1",
+                                                "name_ch": "3:1",
+                                                "name_en": "3:1"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "6",
+                                        "str": "03:02",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "30.00",
+                                        "selections": [
+                                            {
+                                                "selId": "6",
+                                                "str": "3:2",
+                                                "name_ch": "3:2",
+                                                "name_en": "3:2"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "7",
+                                        "str": "04:00",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "100.0",
+                                        "selections": [
+                                            {
+                                                "selId": "7",
+                                                "str": "4:0",
+                                                "name_ch": "4:0",
+                                                "name_en": "4:0"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "8",
+                                        "str": "04:01",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "70.00",
+                                        "selections": [
+                                            {
+                                                "selId": "8",
+                                                "str": "4:1",
+                                                "name_ch": "4:1",
+                                                "name_en": "4:1"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "9",
+                                        "str": "04:02",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "70.00",
+                                        "selections": [
+                                            {
+                                                "selId": "9",
+                                                "str": "4:2",
+                                                "name_ch": "4:2",
+                                                "name_en": "4:2"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "1465028010",
+                        "status": "SELLINGSTARTED",
+                        "oddsType": "FCS",
+                        "instNo": 0,
+                        "inplay": true,
+                        "name_ch": "",
+                        "name_en": "",
+                        "updateAt": "2026-02-20T12:00:10.251+08:00",
+                        "expectedSuspendDateTime": "",
+                        "lines": [
+                            {
+                                "lineId": "0",
+                                "status": "AVAILABLE",
+                                "condition": "0.0",
+                                "main": true,
+                                "combinations": [
+                                    {
+                                        "combId": "1",
+                                        "str": "01:00",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "5.80",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "1:0",
+                                                "name_ch": "1:0",
+                                                "name_en": "1:0"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "2",
+                                        "str": "02:00",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "17.00",
+                                        "selections": [
+                                            {
+                                                "selId": "2",
+                                                "str": "2:0",
+                                                "name_ch": "2:0",
+                                                "name_en": "2:0"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "3",
+                                        "str": "02:01",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "22.00",
+                                        "selections": [
+                                            {
+                                                "selId": "3",
+                                                "str": "2:1",
+                                                "name_ch": "2:1",
+                                                "name_en": "2:1"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "4",
+                                        "str": "03:00",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "90.00",
+                                        "selections": [
+                                            {
+                                                "selId": "4",
+                                                "str": "3:0",
+                                                "name_ch": "3:0",
+                                                "name_en": "3:0"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "5",
+                                        "str": "03:01",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "100.0",
+                                        "selections": [
+                                            {
+                                                "selId": "5",
+                                                "str": "3:1",
+                                                "name_ch": "3:1",
+                                                "name_en": "3:1"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "6",
+                                        "str": "03:02",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "300.0",
+                                        "selections": [
+                                            {
+                                                "selId": "6",
+                                                "str": "3:2",
+                                                "name_ch": "3:2",
+                                                "name_en": "3:2"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "7",
+                                        "str": "04:00",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "500.0",
+                                        "selections": [
+                                            {
+                                                "selId": "7",
+                                                "str": "4:0",
+                                                "name_ch": "4:0",
+                                                "name_en": "4:0"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "8",
+                                        "str": "04:01",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "600.0",
+                                        "selections": [
+                                            {
+                                                "selId": "8",
+                                                "str": "4:1",
+                                                "name_ch": "4:1",
+                                                "name_en": "4:1"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "9",
+                                        "str": "04:02",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1500",
+                                        "selections": [
+                                            {
+                                                "selId": "9",
+                                                "str": "4:2",
+                                                "name_ch": "4:2",
+                                                "name_en": "4:2"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "24",
+                                        "str": "01:05",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1500",
+                                        "selections": [
+                                            {
+                                                "selId": "24",
+                                                "str": "1:5",
+                                                "name_ch": "1:5",
+                                                "name_en": "1:5"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "20",
+                                        "str": "00:04",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "100.0",
+                                        "selections": [
+                                            {
+                                                "selId": "20",
+                                                "str": "0:4",
+                                                "name_ch": "0:4",
+                                                "name_en": "0:4"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "21",
+                                        "str": "01:04",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "250.0",
+                                        "selections": [
+                                            {
+                                                "selId": "21",
+                                                "str": "1:4",
+                                                "name_ch": "1:4",
+                                                "name_en": "1:4"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "22",
+                                        "str": "02:04",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "700.0",
+                                        "selections": [
+                                            {
+                                                "selId": "22",
+                                                "str": "2:4",
+                                                "name_ch": "2:4",
+                                                "name_en": "2:4"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "23",
+                                        "str": "00:05",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "500.0",
+                                        "selections": [
+                                            {
+                                                "selId": "23",
+                                                "str": "0:5",
+                                                "name_ch": "0:5",
+                                                "name_en": "0:5"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "25",
+                                        "str": "02:05",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "2000",
+                                        "selections": [
+                                            {
+                                                "selId": "25",
+                                                "str": "2:5",
+                                                "name_ch": "2:5",
+                                                "name_en": "2:5"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "26",
+                                        "str": "AO",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1500",
+                                        "selections": [
+                                            {
+                                                "selId": "26",
+                                                "str": "AOHS",
+                                                "name_ch": "客其他(主有入球)",
+                                                "name_en": "Away Others (Home Scores)"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "27",
+                                        "str": "00:00",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "2.80",
+                                        "selections": [
+                                            {
+                                                "selId": "27",
+                                                "str": "0:0",
+                                                "name_ch": "0:0",
+                                                "name_en": "0:0"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "28",
+                                        "str": "01:01",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "6.30",
+                                        "selections": [
+                                            {
+                                                "selId": "28",
+                                                "str": "1:1",
+                                                "name_ch": "1:1",
+                                                "name_en": "1:1"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "29",
+                                        "str": "02:02",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "50.00",
+                                        "selections": [
+                                            {
+                                                "selId": "29",
+                                                "str": "2:2",
+                                                "name_ch": "2:2",
+                                                "name_en": "2:2"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "15",
+                                        "str": "00:02",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "7.60",
+                                        "selections": [
+                                            {
+                                                "selId": "15",
+                                                "str": "0:2",
+                                                "name_ch": "0:2",
+                                                "name_en": "0:2"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "10",
+                                        "str": "05:00",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "2000",
+                                        "selections": [
+                                            {
+                                                "selId": "10",
+                                                "str": "5:0",
+                                                "name_ch": "5:0",
+                                                "name_en": "5:0"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "11",
+                                        "str": "05:01",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "2000",
+                                        "selections": [
+                                            {
+                                                "selId": "11",
+                                                "str": "5:1",
+                                                "name_ch": "5:1",
+                                                "name_en": "5:1"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "12",
+                                        "str": "05:02",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "2500",
+                                        "selections": [
+                                            {
+                                                "selId": "12",
+                                                "str": "5:2",
+                                                "name_ch": "5:2",
+                                                "name_en": "5:2"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "13",
+                                        "str": "HO",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "2000",
+                                        "selections": [
+                                            {
+                                                "selId": "13",
+                                                "str": "HOAS",
+                                                "name_ch": "主其他(客有入球)",
+                                                "name_en": "Home Others (Away Scores)"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "14",
+                                        "str": "00:01",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "3.60",
+                                        "selections": [
+                                            {
+                                                "selId": "14",
+                                                "str": "0:1",
+                                                "name_ch": "0:1",
+                                                "name_en": "0:1"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "16",
+                                        "str": "01:02",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "14.50",
+                                        "selections": [
+                                            {
+                                                "selId": "16",
+                                                "str": "1:2",
+                                                "name_ch": "1:2",
+                                                "name_en": "1:2"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "17",
+                                        "str": "00:03",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "30.00",
+                                        "selections": [
+                                            {
+                                                "selId": "17",
+                                                "str": "0:3",
+                                                "name_ch": "0:3",
+                                                "name_en": "0:3"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "18",
+                                        "str": "01:03",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "70.00",
+                                        "selections": [
+                                            {
+                                                "selId": "18",
+                                                "str": "1:3",
+                                                "name_ch": "1:3",
+                                                "name_en": "1:3"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "19",
+                                        "str": "02:03",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "150.0",
+                                        "selections": [
+                                            {
+                                                "selId": "19",
+                                                "str": "2:3",
+                                                "name_ch": "2:3",
+                                                "name_en": "2:3"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "32",
+                                        "str": "OHN",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "2500",
+                                        "selections": [
+                                            {
+                                                "selId": "32",
+                                                "str": "HOAN",
+                                                "name_ch": "主其他(客無入球)",
+                                                "name_en": "Home Others (Away No Goal)"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "33",
+                                        "str": "OAN",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "2000",
+                                        "selections": [
+                                            {
+                                                "selId": "33",
+                                                "str": "AOHN",
+                                                "name_ch": "客其他(主無入球)",
+                                                "name_en": "Away Others (Home No Goal)"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "30",
+                                        "str": "03:03",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "700.0",
+                                        "selections": [
+                                            {
+                                                "selId": "30",
+                                                "str": "3:3",
+                                                "name_ch": "3:3",
+                                                "name_en": "3:3"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "31",
+                                        "str": "DO",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "2500",
+                                        "selections": [
+                                            {
+                                                "selId": "31",
+                                                "str": "DO",
+                                                "name_ch": "和其他",
+                                                "name_en": "Draw Others"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "1465030012",
+                        "status": "SELLINGSTARTED",
+                        "oddsType": "TTG",
+                        "instNo": 0,
+                        "inplay": true,
+                        "name_ch": "",
+                        "name_en": "",
+                        "updateAt": "2026-02-20T12:00:10.251+08:00",
+                        "expectedSuspendDateTime": "",
+                        "lines": [
+                            {
+                                "lineId": "0",
+                                "status": "AVAILABLE",
+                                "condition": "0.0",
+                                "main": true,
+                                "combinations": [
+                                    {
+                                        "combId": "2",
+                                        "str": "1",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "5.10",
+                                        "selections": [
+                                            {
+                                                "selId": "2",
+                                                "str": "1",
+                                                "name_ch": "1",
+                                                "name_en": "1"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "3",
+                                        "str": "2",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "3.50",
+                                        "selections": [
+                                            {
+                                                "selId": "3",
+                                                "str": "2",
+                                                "name_ch": "2",
+                                                "name_en": "2"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "4",
+                                        "str": "3",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "3.60",
+                                        "selections": [
+                                            {
+                                                "selId": "4",
+                                                "str": "3",
+                                                "name_ch": "3",
+                                                "name_en": "3"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "5",
+                                        "str": "4",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "4.70",
+                                        "selections": [
+                                            {
+                                                "selId": "5",
+                                                "str": "4",
+                                                "name_ch": "4",
+                                                "name_en": "4"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "6",
+                                        "str": "5",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "7.40",
+                                        "selections": [
+                                            {
+                                                "selId": "6",
+                                                "str": "5",
+                                                "name_ch": "5",
+                                                "name_en": "5"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "7",
+                                        "str": "6",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "14.50",
+                                        "selections": [
+                                            {
+                                                "selId": "7",
+                                                "str": "6",
+                                                "name_ch": "6",
+                                                "name_en": "6"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "8",
+                                        "str": "7+",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "22.00",
+                                        "selections": [
+                                            {
+                                                "selId": "8",
+                                                "str": "7+",
+                                                "name_ch": "7+",
+                                                "name_en": "7+"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "1",
+                                        "str": "0",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "12.50",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "0",
+                                                "name_ch": "0",
+                                                "name_en": "0"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "1490729015",
+                        "status": "SELLINGSTARTED",
+                        "oddsType": "NTS",
+                        "instNo": 1,
+                        "inplay": true,
+                        "name_ch": "",
+                        "name_en": "",
+                        "updateAt": "2026-02-22T22:00:28.489+08:00",
+                        "expectedSuspendDateTime": "",
+                        "lines": [
+                            {
+                                "lineId": "0",
+                                "status": "AVAILABLE",
+                                "condition": "0.0",
+                                "main": true,
+                                "combinations": [
+                                    {
+                                        "combId": "1",
+                                        "str": "H",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "2.36",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "H",
+                                                "name_ch": "主隊",
+                                                "name_en": "Home"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "2",
+                                        "str": "A",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1.57",
+                                        "selections": [
+                                            {
+                                                "selId": "2",
+                                                "str": "A",
+                                                "name_ch": "客隊",
+                                                "name_en": "Away"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "3",
+                                        "str": "N",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "12.50",
+                                        "selections": [
+                                            {
+                                                "selId": "3",
+                                                "str": "N",
+                                                "name_ch": "無入球",
+                                                "name_en": "No Goals"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "1465034046",
+                        "status": "SELLINGSTARTED",
+                        "oddsType": "FHH",
+                        "instNo": 0,
+                        "inplay": true,
+                        "name_ch": "",
+                        "name_en": "",
+                        "updateAt": "2026-02-20T12:00:10.251+08:00",
+                        "expectedSuspendDateTime": "",
+                        "lines": [
+                            {
+                                "lineId": "1",
+                                "status": "AVAILABLE",
+                                "condition": "0.0/+0.5",
+                                "main": true,
+                                "combinations": [
+                                    {
+                                        "combId": "1",
+                                        "str": "H",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1.74",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "H",
+                                                "name_ch": "主隊勝",
+                                                "name_en": "Home"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "2",
+                                        "str": "A",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1.97",
+                                        "selections": [
+                                            {
+                                                "selId": "2",
+                                                "str": "A",
+                                                "name_ch": "客隊勝",
+                                                "name_en": "Away"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "1465035047",
+                        "status": "SELLINGSTARTED",
+                        "oddsType": "FHC",
+                        "instNo": 0,
+                        "inplay": true,
+                        "name_ch": "",
+                        "name_en": "",
+                        "updateAt": "2026-02-20T12:00:10.251+08:00",
+                        "expectedSuspendDateTime": "",
+                        "lines": [
+                            {
+                                "lineId": "1",
+                                "status": "AVAILABLE",
+                                "condition": "+0.5",
+                                "main": true,
+                                "combinations": [
+                                    {
+                                        "combId": "1",
+                                        "str": "H",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1.87",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "H",
+                                                "name_ch": "主隊勝",
+                                                "name_en": "Home"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "2",
+                                        "str": "A",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1.83",
+                                        "selections": [
+                                            {
+                                                "selId": "2",
+                                                "str": "A",
+                                                "name_ch": "客隊勝",
+                                                "name_en": "Away"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "lineId": "2",
+                                "status": "SUSPENDED",
+                                "condition": "+1.5",
+                                "main": false,
+                                "combinations": [
+                                    {
+                                        "combId": "1",
+                                        "str": "H",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1.45",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "H",
+                                                "name_ch": "主隊勝",
+                                                "name_en": "Home"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "2",
+                                        "str": "A",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "2.55",
+                                        "selections": [
+                                            {
+                                                "selId": "2",
+                                                "str": "A",
+                                                "name_ch": "客隊勝",
+                                                "name_en": "Away"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "1465036048",
+                        "status": "SELLINGSTARTED",
+                        "oddsType": "CHD",
+                        "instNo": 0,
+                        "inplay": true,
+                        "name_ch": "",
+                        "name_en": "",
+                        "updateAt": "2026-02-20T12:00:10.251+08:00",
+                        "expectedSuspendDateTime": "",
+                        "lines": [
+                            {
+                                "lineId": "1",
+                                "status": "AVAILABLE",
+                                "condition": "+1.5",
+                                "main": true,
+                                "combinations": [
+                                    {
+                                        "combId": "1",
+                                        "str": "H",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1.72",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "H",
+                                                "name_ch": "主隊勝",
+                                                "name_en": "Home"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "2",
+                                        "str": "A",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "2.00",
+                                        "selections": [
+                                            {
+                                                "selId": "2",
+                                                "str": "A",
+                                                "name_ch": "客隊勝",
+                                                "name_en": "Away"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "lineId": "2",
+                                "status": "SUSPENDED",
+                                "condition": "+2.5",
+                                "main": false,
+                                "combinations": [
+                                    {
+                                        "combId": "1",
+                                        "str": "H",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "1.52",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "H",
+                                                "name_ch": "主隊勝",
+                                                "name_en": "Home"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "2",
+                                        "str": "A",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "Offer",
+                                        "currentOdds": "2.35",
+                                        "selections": [
+                                            {
+                                                "selId": "2",
+                                                "str": "A",
+                                                "name_ch": "客隊勝",
+                                                "name_en": "Away"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "1465038053",
+                        "status": "SELLINGSTOPPED",
+                        "oddsType": "AGS",
+                        "instNo": 0,
+                        "inplay": true,
+                        "name_ch": "",
+                        "name_en": "",
+                        "updateAt": "2026-02-22T22:00:42.671+08:00",
+                        "expectedSuspendDateTime": "",
+                        "lines": [
+                            {
+                                "lineId": "0",
+                                "status": "AVAILABLE",
+                                "condition": "0.0",
+                                "main": true,
+                                "combinations": [
+                                    {
+                                        "combId": "10",
+                                        "str": "112",
+                                        "status": "UNAVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "6.50",
+                                        "selections": [
+                                            {
+                                                "selId": "10",
+                                                "str": "112",
+                                                "name_ch": "賴恩耶迪斯",
+                                                "name_en": "Ryan YATES"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "40",
+                                        "str": "216",
+                                        "status": "UNAVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "15.00",
+                                        "selections": [
+                                            {
+                                                "selId": "40",
+                                                "str": "216",
+                                                "name_ch": "奇雲藍斯",
+                                                "name_en": "Calvin RAMSAY"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "41",
+                                        "str": "209",
+                                        "status": "UNAVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "5.50",
+                                        "selections": [
+                                            {
+                                                "selId": "41",
+                                                "str": "209",
+                                                "name_ch": "基蘭摩里遜",
+                                                "name_en": "Kieran MORRISON"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "22",
+                                        "str": "111",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "6.50",
+                                        "selections": [
+                                            {
+                                                "selId": "22",
+                                                "str": "111",
+                                                "name_ch": "伊巴謙辛加尼",
+                                                "name_en": "Ibrahim SANGARE"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "20",
+                                        "str": "206",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "5.50",
+                                        "selections": [
+                                            {
+                                                "selId": "20",
+                                                "str": "206",
+                                                "name_ch": "蘇保斯拉爾",
+                                                "name_en": "Dominik SZOBOSZLAI"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "21",
+                                        "str": "121",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "20.00",
+                                        "selections": [
+                                            {
+                                                "selId": "21",
+                                                "str": "121",
+                                                "name_ch": "奧拉艾拿",
+                                                "name_en": "Ola AINA"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "23",
+                                        "str": "110",
+                                        "status": "UNAVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "6.00",
+                                        "selections": [
+                                            {
+                                                "selId": "23",
+                                                "str": "110",
+                                                "name_ch": "尼高拉斯杜明基斯",
+                                                "name_en": "Nicolas DOMINGUEZ"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "24",
+                                        "str": "117",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "17.00",
+                                        "selections": [
+                                            {
+                                                "selId": "24",
+                                                "str": "117",
+                                                "name_ch": "梅里路",
+                                                "name_en": "MURILLO Costa"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "25",
+                                        "str": "106",
+                                        "status": "UNAVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "4.35",
+                                        "selections": [
+                                            {
+                                                "selId": "25",
+                                                "str": "106",
+                                                "name_ch": "占士麥艾迪",
+                                                "name_en": "James McATEE"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "26",
+                                        "str": "205",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "4.50",
+                                        "selections": [
+                                            {
+                                                "selId": "26",
+                                                "str": "205",
+                                                "name_ch": "域斯",
+                                                "name_en": "Florian WIRTZ"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "27",
+                                        "str": "107",
+                                        "status": "UNAVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "5.00",
+                                        "selections": [
+                                            {
+                                                "selId": "27",
+                                                "str": "107",
+                                                "name_ch": "丹尼杜耶",
+                                                "name_en": "Dan NDOYE"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "28",
+                                        "str": "109",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "4.50",
+                                        "selections": [
+                                            {
+                                                "selId": "28",
+                                                "str": "109",
+                                                "name_ch": "奧馬利赫捷臣",
+                                                "name_en": "Omari HUTCHINSON"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "29",
+                                        "str": "113",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "7.60",
+                                        "selections": [
+                                            {
+                                                "selId": "29",
+                                                "str": "113",
+                                                "name_ch": "艾利洛安達臣",
+                                                "name_en": "Elliot ANDERSON"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "11",
+                                        "str": "115",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "11.00",
+                                        "selections": [
+                                            {
+                                                "selId": "11",
+                                                "str": "115",
+                                                "name_ch": "尼高威廉斯",
+                                                "name_en": "Neco WILLIAMS"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "12",
+                                        "str": "103",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "3.34",
+                                        "selections": [
+                                            {
+                                                "selId": "12",
+                                                "str": "103",
+                                                "name_ch": "基比斯韋特",
+                                                "name_en": "Morgan GIBBS-WHITE"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "13",
+                                        "str": "203",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "3.75",
+                                        "selections": [
+                                            {
+                                                "selId": "13",
+                                                "str": "203",
+                                                "name_ch": "加普",
+                                                "name_en": "Cody GAKPO"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "14",
+                                        "str": "212",
+                                        "status": "IRRATIONAL",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "9.50",
+                                        "selections": [
+                                            {
+                                                "selId": "14",
+                                                "str": "212",
+                                                "name_ch": "謝利美費林邦",
+                                                "name_en": "Jeremie FRIMPONG"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "15",
+                                        "str": "118",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "15.00",
+                                        "selections": [
+                                            {
+                                                "selId": "15",
+                                                "str": "118",
+                                                "name_ch": "尼高拉米連高域",
+                                                "name_en": "Nikola MILENKOVIC"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "16",
+                                        "str": "208",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "5.50",
+                                        "selections": [
+                                            {
+                                                "selId": "16",
+                                                "str": "208",
+                                                "name_ch": "賴恩格雲貝治",
+                                                "name_en": "Ryan GRAVENBERCH"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "17",
+                                        "str": "120",
+                                        "status": "UNAVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "22.00",
+                                        "selections": [
+                                            {
+                                                "selId": "17",
+                                                "str": "120",
+                                                "name_ch": "摩拉圖",
+                                                "name_en": "MORATO"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "18",
+                                        "str": "204",
+                                        "status": "UNAVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "3.75",
+                                        "selections": [
+                                            {
+                                                "selId": "18",
+                                                "str": "204",
+                                                "name_ch": "費達歷高基艾沙",
+                                                "name_en": "Federico CHIESA"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "19",
+                                        "str": "219",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "15.00",
+                                        "selections": [
+                                            {
+                                                "selId": "19",
+                                                "str": "219",
+                                                "name_ch": "米路斯卻基斯",
+                                                "name_en": "Milos KERKEZ"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "34",
+                                        "str": "122",
+                                        "status": "IRRATIONAL",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "23.00",
+                                        "selections": [
+                                            {
+                                                "selId": "34",
+                                                "str": "122",
+                                                "name_ch": "薩克艾保特",
+                                                "name_en": "Zach ABBOTT"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "35",
+                                        "str": "108",
+                                        "status": "UNAVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "4.50",
+                                        "selections": [
+                                            {
+                                                "selId": "35",
+                                                "str": "108",
+                                                "name_ch": "巴克華",
+                                                "name_en": "Dilane BAKWA"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "36",
+                                        "str": "101",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "3.28",
+                                        "selections": [
+                                            {
+                                                "selId": "36",
+                                                "str": "101",
+                                                "name_ch": "伊戈捷西斯",
+                                                "name_en": "Igor JESUS Maciel"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "37",
+                                        "str": "210",
+                                        "status": "UNAVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "5.50",
+                                        "selections": [
+                                            {
+                                                "selId": "37",
+                                                "str": "210",
+                                                "name_ch": "迪利尼約尼",
+                                                "name_en": "Trey NYONI"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "38",
+                                        "str": "119",
+                                        "status": "UNAVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "22.00",
+                                        "selections": [
+                                            {
+                                                "selId": "38",
+                                                "str": "119",
+                                                "name_ch": "查亞根夏",
+                                                "name_en": "Jair CUNHA"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "39",
+                                        "str": "207",
+                                        "status": "UNAVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "4.50",
+                                        "selections": [
+                                            {
+                                                "selId": "39",
+                                                "str": "207",
+                                                "name_ch": "安古莫夏",
+                                                "name_en": "Rio NGUMOHA"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "30",
+                                        "str": "114",
+                                        "status": "IRRATIONAL",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "8.00",
+                                        "selections": [
+                                            {
+                                                "selId": "30",
+                                                "str": "114",
+                                                "name_ch": "尼高路沙禾拿",
+                                                "name_en": "Nicolo SAVONA"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "31",
+                                        "str": "102",
+                                        "status": "UNAVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "3.20",
+                                        "selections": [
+                                            {
+                                                "selId": "31",
+                                                "str": "102",
+                                                "name_ch": "羅倫素盧卡",
+                                                "name_en": "Lorenzo LUCCA"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "32",
+                                        "str": "201",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "1.98",
+                                        "selections": [
+                                            {
+                                                "selId": "32",
+                                                "str": "201",
+                                                "name_ch": "艾基迪基",
+                                                "name_en": "Hugo EKITIKE"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "33",
+                                        "str": "116",
+                                        "status": "IRRATIONAL",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "12.00",
+                                        "selections": [
+                                            {
+                                                "selId": "33",
+                                                "str": "116",
+                                                "name_ch": "盧卡尼斯",
+                                                "name_en": "Luca NETZ"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "1",
+                                        "str": "215",
+                                        "status": "UNAVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "13.00",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "215",
+                                                "name_ch": "安德魯羅拔臣",
+                                                "name_en": "Andrew ROBERTSON"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "2",
+                                        "str": "218",
+                                        "status": "UNAVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "15.00",
+                                        "selections": [
+                                            {
+                                                "selId": "2",
+                                                "str": "218",
+                                                "name_ch": "祖高美斯",
+                                                "name_en": "Joe GOMEZ"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "3",
+                                        "str": "202",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "3.24",
+                                        "selections": [
+                                            {
+                                                "selId": "3",
+                                                "str": "202",
+                                                "name_ch": "穆罕默德沙拿",
+                                                "name_en": "Mohamed SALAH"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "4",
+                                        "str": "213",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "9.50",
+                                        "selections": [
+                                            {
+                                                "selId": "4",
+                                                "str": "213",
+                                                "name_ch": "華基爾雲迪積克",
+                                                "name_en": "Virgil VAN DIJK"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "5",
+                                        "str": "214",
+                                        "status": "UNAVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "10.00",
+                                        "selections": [
+                                            {
+                                                "selId": "5",
+                                                "str": "214",
+                                                "name_ch": "居迪斯鍾斯",
+                                                "name_en": "Curtis JONES"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "6",
+                                        "str": "217",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "15.00",
+                                        "selections": [
+                                            {
+                                                "selId": "6",
+                                                "str": "217",
+                                                "name_ch": "伊巴希馬干拿迪",
+                                                "name_en": "Ibrahima KONATE"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "7",
+                                        "str": "105",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "4.15",
+                                        "selections": [
+                                            {
+                                                "selId": "7",
+                                                "str": "105",
+                                                "name_ch": "赫臣奧杜爾",
+                                                "name_en": "Callum HUDSON-ODOI"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "8",
+                                        "str": "211",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "7.00",
+                                        "selections": [
+                                            {
+                                                "selId": "8",
+                                                "str": "211",
+                                                "name_ch": "阿歷斯麥亞里士打",
+                                                "name_en": "Alexis MAC ALLISTER"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "9",
+                                        "str": "104",
+                                        "status": "IRRATIONAL",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "3.45",
+                                        "selections": [
+                                            {
+                                                "selId": "9",
+                                                "str": "104",
+                                                "name_ch": "艾禾尼爾",
+                                                "name_en": "Taiwo AWONIYI"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "1500410051",
+                        "status": "SELLINGSTOPPED",
+                        "oddsType": "NGS",
+                        "instNo": 1,
+                        "inplay": true,
+                        "name_ch": "",
+                        "name_en": "",
+                        "updateAt": "2026-02-22T22:00:42.108+08:00",
+                        "expectedSuspendDateTime": "",
+                        "lines": [
+                            {
+                                "lineId": "0",
+                                "status": "AVAILABLE",
+                                "condition": "0.0",
+                                "main": true,
+                                "combinations": [
+                                    {
+                                        "combId": "4",
+                                        "str": "202",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "7.00",
+                                        "selections": [
+                                            {
+                                                "selId": "4",
+                                                "str": "202",
+                                                "name_ch": "穆罕默德沙拿",
+                                                "name_en": "Mohamed SALAH"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "5",
+                                        "str": "213",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "22.00",
+                                        "selections": [
+                                            {
+                                                "selId": "5",
+                                                "str": "213",
+                                                "name_ch": "華基爾雲迪積克",
+                                                "name_en": "Virgil VAN DIJK"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "7",
+                                        "str": "217",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "30.00",
+                                        "selections": [
+                                            {
+                                                "selId": "7",
+                                                "str": "217",
+                                                "name_ch": "伊巴希馬干拿迪",
+                                                "name_en": "Ibrahima KONATE"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "8",
+                                        "str": "105",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "9.50",
+                                        "selections": [
+                                            {
+                                                "selId": "8",
+                                                "str": "105",
+                                                "name_ch": "赫臣奧杜爾",
+                                                "name_en": "Callum HUDSON-ODOI"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "9",
+                                        "str": "211",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "17.00",
+                                        "selections": [
+                                            {
+                                                "selId": "9",
+                                                "str": "211",
+                                                "name_ch": "阿歷斯麥亞里士打",
+                                                "name_en": "Alexis MAC ALLISTER"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "1",
+                                        "str": "000",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "10.50",
+                                        "selections": [
+                                            {
+                                                "selId": "1",
+                                                "str": "00",
+                                                "name_ch": "無下一名入球球員",
+                                                "name_en": "No Next Scorer"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "30",
+                                        "str": "113",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "18.00",
+                                        "selections": [
+                                            {
+                                                "selId": "30",
+                                                "str": "113",
+                                                "name_ch": "艾利洛安達臣",
+                                                "name_en": "Elliot ANDERSON"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "33",
+                                        "str": "201",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "4.20",
+                                        "selections": [
+                                            {
+                                                "selId": "33",
+                                                "str": "201",
+                                                "name_ch": "艾基迪基",
+                                                "name_en": "Hugo EKITIKE"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "37",
+                                        "str": "101",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "7.60",
+                                        "selections": [
+                                            {
+                                                "selId": "37",
+                                                "str": "101",
+                                                "name_ch": "伊戈捷西斯",
+                                                "name_en": "Igor JESUS Maciel"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "20",
+                                        "str": "219",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "30.00",
+                                        "selections": [
+                                            {
+                                                "selId": "20",
+                                                "str": "219",
+                                                "name_ch": "米路斯卻基斯",
+                                                "name_en": "Milos KERKEZ"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "21",
+                                        "str": "206",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "13.00",
+                                        "selections": [
+                                            {
+                                                "selId": "21",
+                                                "str": "206",
+                                                "name_ch": "蘇保斯拉爾",
+                                                "name_en": "Dominik SZOBOSZLAI"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "22",
+                                        "str": "121",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "45.00",
+                                        "selections": [
+                                            {
+                                                "selId": "22",
+                                                "str": "121",
+                                                "name_ch": "奧拉艾拿",
+                                                "name_en": "Ola AINA"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "23",
+                                        "str": "111",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "15.00",
+                                        "selections": [
+                                            {
+                                                "selId": "23",
+                                                "str": "111",
+                                                "name_ch": "伊巴謙辛加尼",
+                                                "name_en": "Ibrahim SANGARE"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "25",
+                                        "str": "117",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "40.00",
+                                        "selections": [
+                                            {
+                                                "selId": "25",
+                                                "str": "117",
+                                                "name_ch": "梅里路",
+                                                "name_en": "MURILLO Costa"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "27",
+                                        "str": "205",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "10.00",
+                                        "selections": [
+                                            {
+                                                "selId": "27",
+                                                "str": "205",
+                                                "name_ch": "域斯",
+                                                "name_en": "Florian WIRTZ"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "29",
+                                        "str": "109",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "11.00",
+                                        "selections": [
+                                            {
+                                                "selId": "29",
+                                                "str": "109",
+                                                "name_ch": "奧馬利赫捷臣",
+                                                "name_en": "Omari HUTCHINSON"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "16",
+                                        "str": "118",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "35.00",
+                                        "selections": [
+                                            {
+                                                "selId": "16",
+                                                "str": "118",
+                                                "name_ch": "尼高拉米連高域",
+                                                "name_en": "Nikola MILENKOVIC"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "17",
+                                        "str": "208",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "13.00",
+                                        "selections": [
+                                            {
+                                                "selId": "17",
+                                                "str": "208",
+                                                "name_ch": "賴恩格雲貝治",
+                                                "name_en": "Ryan GRAVENBERCH"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "12",
+                                        "str": "115",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "24.00",
+                                        "selections": [
+                                            {
+                                                "selId": "12",
+                                                "str": "115",
+                                                "name_ch": "尼高威廉斯",
+                                                "name_en": "Neco WILLIAMS"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "13",
+                                        "str": "103",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "7.60",
+                                        "selections": [
+                                            {
+                                                "selId": "13",
+                                                "str": "103",
+                                                "name_ch": "基比斯韋特",
+                                                "name_en": "Morgan GIBBS-WHITE"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "combId": "14",
+                                        "str": "203",
+                                        "status": "AVAILABLE",
+                                        "offerEarlySettlement": "NotOffer",
+                                        "currentOdds": "8.50",
+                                        "selections": [
+                                            {
+                                                "selId": "14",
+                                                "str": "203",
+                                                "name_ch": "加普",
+                                                "name_en": "Cody GAKPO"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

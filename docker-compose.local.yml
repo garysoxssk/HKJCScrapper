@@ -1,0 +1,35 @@
+# Local development: includes MongoDB container
+# Usage: docker compose -f docker-compose.local.yml up -d
+
+services:
+  mongodb:
+    image: mongo:8
+    container_name: hkjc-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  scrapper:
+    build: .
+    container_name: hkjc-scrapper
+    restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    env_file:
+      - .env.local
+    environment:
+      - APP_ENV=local
+      - MONGODB_URI=mongodb://mongodb:27017
+    volumes:
+      - ./logs:/app/logs
+
+volumes:
+  mongodb_data:

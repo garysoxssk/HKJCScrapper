@@ -9,7 +9,7 @@ HKJCScrapper is designed as a modular system with four independent components th
 ### Module I - HKJC Odds Crawler [IN PROGRESS]
 Fetches football match odds from Hong Kong Jockey Club's GraphQL API using a **rule-based scheduler**. Instead of blindly polling everything, you configure watch rules to observe specific matches (by team/tournament), specific odds types, and fetch at configured times (before kickoff, at halftime, continuously during match).
 
-**Status**: Phase 3 complete (configuration + data models). Phase 4 next (API client).
+**Status**: Phase 8 complete (scheduler + entry point). Milestone 2 reached -- full rule-based pipeline running end-to-end.
 
 ### Module II - 3rd Party Football Events Crawler [NOT STARTED]
 Captures live match events (corner kicks, goals, cards, substitutions) with timestamps from an external API. Aligns with HKJC match data using team names + kickoff time for combined analysis.
@@ -71,27 +71,79 @@ Optionally automates bet placement on HKJC using Playwright + stealth mode. **No
 - **Reference Data**: Built-in lookups for 18 odds types (HAD, CHL, HDC, etc.) and 8 tournaments (EPL, LLG, UCL, etc.)
 - **Match Alignment**: Cross-module matching via team names + kickoff time for integrating HKJC and 3rd party data
 
-## Installation
+## Quick Start (Docker - Production)
+
+Connects to MongoDB Atlas. Requires [Docker](https://docs.docker.com/get-docker/) and Docker Compose.
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd HKJCScrapper
+
+# Copy and fill in your prod config
+cp .env.example .env.prod
+# Edit .env.prod with your MongoDB Atlas credentials and Telegram settings
+
+# Start the scrapper (pass MongoDB password at runtime)
+MONGODB_PASSWORD=your_password docker compose up -d
+
+# Check status
+docker compose ps
+docker compose logs -f scrapper
+
+# Add a watch rule
+MONGODB_PASSWORD=your_password docker compose exec scrapper \
+  uv run python -m hkjc_scrapper.cli add-rule \
+  --name "EPL HAD" --tournaments "EPL" \
+  --observation "HAD,HHA:event:before_kickoff:30"
+
+# Stop
+docker compose down
+```
+
+### Docker with Local MongoDB
+
+For local development with a bundled MongoDB container:
+
+```bash
+docker compose -f docker-compose.local.yml up -d
+docker compose -f docker-compose.local.yml logs -f scrapper
+docker compose -f docker-compose.local.yml down
+```
+
+### Environment Profiles
+
+| Profile | File | MongoDB | Docker file |
+|---------|------|---------|-------------|
+| `local` | `.env.local` | Local `mongodb://localhost:27017` | `docker-compose.local.yml` |
+| `prod` | `.env.prod` | Atlas `mongodb+srv://...` | `docker-compose.yml` |
+
+Switch profiles via `APP_ENV` environment variable:
+
+```bash
+# Local (default)
+APP_ENV=local uv run python -m hkjc_scrapper.main
+
+# Production
+APP_ENV=prod MONGODB_PASSWORD=xxx uv run python -m hkjc_scrapper.main
+```
+
+## Local Development (without Docker)
 
 ```bash
 # Install uv (if not already installed)
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Clone the repository
+# Clone and install
 git clone <repository-url>
 cd HKJCScrapper
-
-# Install dependencies
 uv sync
 
 # Copy environment template
-cp .env.example .env
+cp .env .env
 # Edit .env with your MongoDB URI and other settings
-```
 
-## Usage
-
-```bash
+# Requires a running MongoDB instance (local or remote)
 # Run the bot (service mode)
 uv run python -m hkjc_scrapper.main
 
@@ -100,16 +152,27 @@ uv run python -m hkjc_scrapper.main --once
 
 # Manage watch rules
 uv run python -m hkjc_scrapper.cli list-rules
-uv run python -m hkjc_scrapper.cli add-rule --name "Man Utd EPL" \
-  --teams "Manchester United" --tournaments "EPL" \
+uv run python -m hkjc_scrapper.cli add-rule --name "EPL HAD" \
+  --tournaments "EPL" \
   --observation "HAD,HHA:event:before_kickoff:30"
 
+# Browse live matches and fetch ad-hoc
+uv run python -m hkjc_scrapper.cli list-matches --tournament EPL
+uv run python -m hkjc_scrapper.cli fetch-match --id 50062141 --odds HAD,HHA
+
+# Query stored data
+uv run python -m hkjc_scrapper.cli get-match --tournament EPL
+uv run python -m hkjc_scrapper.cli get-odds --id 50062141 --odds HAD --all
+
 # Run tests
-uv run pytest tests/ -v
+uv run pytest
 ```
 
 ## Documentation
 
+- **Command reference**: `docs/commands.md`
+- **Database schema**: `docs/database.md`
+- **Odds type reference**: `docs/odds_types.md`
 - **High-level overview**: `docs/project_modules_high_level.md`
 - **Detailed implementation plan**: `docs/project_plan.md`
 - **AI agent context**: `CLAUDE.md`
@@ -122,14 +185,23 @@ uv run pytest tests/ -v
 | 1 | Project scaffolding | ✅ Complete |
 | 2 | Configuration | ✅ Complete |
 | 3 | Pydantic models + reference data | ✅ Complete |
-| 4 | HKJC API client | 🚧 Next |
-| 5 | Response parser | ⏳ Pending |
-| 6 | MongoDB storage | ⏳ Pending |
-| 6a | Watch rules CLI | ⏳ Pending |
-| 7 | Rule-based scheduler | ⏳ Pending |
-| 8 | Entry point | ⏳ Pending |
-| 9 | Testing | ⏳ Pending |
-| 10 | Docker deployment | ⏳ Pending |
+| 4 | HKJC API client | ✅ Complete |
+| 5 | Response parser | ✅ Complete |
+| 6 | MongoDB storage | ✅ Complete |
+| 6a | Watch rules CLI | ✅ Complete |
+| 7 | Rule-based scheduler | ✅ Complete |
+| 8 | Entry point | ✅ Complete |
+| 9 | Testing (extended) | ⏳ Pending |
+| 10 | Docker deployment | ✅ Complete |
+
+### Test Summary
+
+| Test Suite | Count | Command |
+|------------|-------|---------|
+| Unit tests (default) | 137 | `uv run pytest` |
+| MongoDB integration | 11 | `uv run pytest -m mongodb` |
+| Live API integration | 5 | `uv run pytest -m integration` |
+| **Total** | **153** | `uv run pytest -m "integration or mongodb" --override-ini="addopts="` |
 
 ## Data Collections
 
@@ -153,8 +225,8 @@ uv run pytest tests/ -v
 
 **Four-module system for football betting analytics:**
 
-- **Module I** (In Progress): Rule-based HKJC odds crawler with configurable watch rules
-  - 18 odds types (HAD, Handicaps, Corners, Correct Scores, etc.)
+- **Module I** (Milestone 2 reached): Rule-based HKJC odds crawler with configurable watch rules
+  - 38 odds types (HAD, Handicaps, Corners, Goal Scorers, Extra Time, etc.)
   - Smart scheduling: before kickoff, at halftime, or continuous during match
   - Two-layer scheduler minimizes API calls while ensuring comprehensive coverage
 

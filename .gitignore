@@ -13,8 +13,10 @@ build/
 venv/
 ENV/
 
-# Environment variables
+# Environment variables (all profiles contain secrets)
 .env
+.env.local
+.env.prod
 
 # IDE
 .idea/
@@ -26,5 +28,11 @@ ENV/
 .DS_Store
 Thumbs.db
 
+# Logs
+logs/
+
+# Session files
+*.session
+
 # uv
-uv.lock
+# Note: uv.lock is intentionally tracked for reproducible Docker builds

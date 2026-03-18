@@ -10,6 +10,7 @@ dependencies = [
     "pydantic>=2.5",
     "pydantic-settings>=2.1",
     "apscheduler>=3.10",
+    "telethon>=1.42.0",
 ]
 
 [project.scripts]
@@ -24,3 +25,10 @@ packages = ["src/hkjc_scrapper"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "mongomock>=4.3.0",
+    "pytest>=9.0.2",
+    "pytest-mock>=3.15.1",
+]

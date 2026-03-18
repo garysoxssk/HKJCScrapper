@@ -1,0 +1,17 @@
+services:
+  scrapper:
+    build: .
+    container_name: hkjc-scrapper
+    restart: unless-stopped
+    env_file:
+      - .env.prod
+    environment:
+      # MONGODB_PASSWORD must be passed at runtime:
+      #   MONGODB_PASSWORD=xxx docker compose up -d
+      # Or set it in a .env file in the same directory as docker-compose.yml
+      - APP_ENV=prod
+      - MONGODB_PASSWORD=${MONGODB_PASSWORD}
+    volumes:
+      - ./logs:/app/logs
+    # Override command for one-shot mode:
+    #   MONGODB_PASSWORD=xxx docker compose run --rm scrapper uv run python -m hkjc_scrapper.main --once
