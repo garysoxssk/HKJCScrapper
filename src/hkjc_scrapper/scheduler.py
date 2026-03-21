@@ -31,6 +31,33 @@ from hkjc_scrapper.tg_msg_client import TGMessageClient
 
 logger = logging.getLogger(__name__)
 
+
+def _extract_odds_details(foPools) -> list[dict]:
+    """Extract all line odds from foPools for Telegram notification.
+
+    Args:
+        foPools: List of FoPool model instances
+
+    Returns:
+        List of dicts suitable for TGMessageClient.notify_fetch(odds_details=...)
+    """
+    details = []
+    for pool in foPools:
+        lines = []
+        for line in pool.lines:
+            combs = [
+                {"str": c.str, "currentOdds": c.currentOdds}
+                for c in line.combinations
+            ]
+            lines.append({
+                "condition": line.condition,
+                "main": line.main,
+                "combinations": combs,
+            })
+        details.append({"oddsType": pool.oddsType, "lines": lines})
+    return details
+
+
 # HK timezone offset (+08:00)
 HK_TZ = timezone(timedelta(hours=8))
 
@@ -136,6 +163,9 @@ class MatchScheduler:
             self._on_job_event, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR
         )
 
+        # Reload persisted jobs from DB before starting
+        self._reload_scheduled_jobs()
+
         # Schedule the recurring discovery job
         self._scheduler.add_job(
             self.run_discovery,
@@ -180,6 +210,69 @@ class MatchScheduler:
         if event.exception:
             logger.error("Job %s failed: %s", event.job_id, event.exception)
 
+    def _reload_scheduled_jobs(self):
+        """Reload persisted scheduled jobs from MongoDB on startup.
+
+        Cleans up expired entries, then re-schedules future jobs into
+        APScheduler and rebuilds the _scheduled_keys dedup set.
+        """
+        now = datetime.now(timezone.utc)
+
+        # 1. Clean up expired entries
+        expired = self.db.delete_expired_scheduled_jobs(now)
+        if expired:
+            logger.info("[Startup] Cleaned up %d expired scheduled jobs", expired)
+
+        # 2. Load remaining future jobs
+        jobs = self.db.get_all_scheduled_jobs()
+        reloaded = 0
+
+        for job_doc in jobs:
+            dedup_key = job_doc["dedup_key"]
+            self._scheduled_keys.add(dedup_key)
+
+            if job_doc["job_type"] == "event":
+                trigger_time = job_doc["trigger_time"]
+                self._scheduler.add_job(
+                    self.execute_fetch,
+                    trigger=DateTrigger(run_date=trigger_time),
+                    id=f"reload:{dedup_key}",
+                    name=f"Reload fetch {job_doc['front_end_id']}",
+                    replace_existing=True,
+                    kwargs={
+                        "match_id": job_doc["match_id"],
+                        "front_end_id": job_doc["front_end_id"],
+                        "odds_types": job_doc["odds_types"],
+                        "dedup_key": dedup_key,
+                    },
+                )
+                reloaded += 1
+
+            elif job_doc["job_type"] == "continuous":
+                end_time = job_doc["end_time"]
+                interval = job_doc["interval_seconds"]
+                self._scheduler.add_job(
+                    self.execute_fetch,
+                    trigger=IntervalTrigger(
+                        seconds=interval,
+                        start_date=now,
+                        end_date=end_time,
+                    ),
+                    id=f"reload:{dedup_key}",
+                    name=f"Reload continuous {job_doc['front_end_id']}",
+                    replace_existing=True,
+                    kwargs={
+                        "match_id": job_doc["match_id"],
+                        "front_end_id": job_doc["front_end_id"],
+                        "odds_types": job_doc["odds_types"],
+                        "dedup_key": dedup_key,
+                    },
+                )
+                reloaded += 1
+
+        if reloaded:
+            logger.info("[Startup] Reloaded %d scheduled jobs from DB", reloaded)
+
     # ========================================================================
     # Layer 1: Discovery
     # ========================================================================
@@ -214,6 +307,7 @@ class MatchScheduler:
             # 4. Evaluate each rule against matches
             now = datetime.now(timezone.utc)
             jobs_scheduled = 0
+            rule_details: list[dict] = []
 
             for rule in rules:
                 matched = filter_matches_by_rule(matches, rule)
@@ -226,11 +320,19 @@ class MatchScheduler:
                     len(matched),
                 )
 
+                jobs_before = jobs_scheduled
                 for match in matched:
                     for obs in rule.observations:
                         jobs_scheduled += self._schedule_observation(
                             match, obs, now
                         )
+                jobs_for_rule = jobs_scheduled - jobs_before
+
+                rule_details.append({
+                    "name": rule.name,
+                    "matched": len(matched),
+                    "jobs": jobs_for_rule,
+                })
 
             logger.info(
                 "[Discovery] Cycle complete: %d new jobs scheduled",
@@ -239,12 +341,16 @@ class MatchScheduler:
 
             # Notify via Telegram (only when jobs were scheduled)
             if jobs_scheduled > 0 and self.tg:
+                details = rule_details if self.settings.TG_DISCOVERY_INCLUDE_RULES else None
                 self.tg.notify_discovery(
-                    len(matches), len(rules), jobs_scheduled
+                    len(matches), len(rules), jobs_scheduled,
+                    rule_details=details,
                 )
 
-        except Exception:
+        except Exception as e:
             logger.exception("[Discovery] Error during discovery cycle")
+            if self.tg:
+                self.tg.notify_error("Discovery cycle", e)
 
     def _discover_tournaments(self):
         """Fetch and upsert tournament list from API."""
@@ -321,9 +427,19 @@ class MatchScheduler:
                         "match_id": match.id,
                         "front_end_id": match.frontEndId,
                         "odds_types": obs.odds_types,
+                        "dedup_key": dedup_key,
                     },
                 )
                 self._scheduled_keys.add(dedup_key)
+                self.db.insert_scheduled_job({
+                    "dedup_key": dedup_key,
+                    "job_type": "event",
+                    "match_id": match.id,
+                    "front_end_id": match.frontEndId,
+                    "odds_types": obs.odds_types,
+                    "trigger_time": trigger_time,
+                    "created_at": datetime.now(timezone.utc),
+                })
                 scheduled += 1
 
                 logger.info(
@@ -378,9 +494,21 @@ class MatchScheduler:
                     "match_id": match.id,
                     "front_end_id": match.frontEndId,
                     "odds_types": obs.odds_types,
+                    "dedup_key": dedup_key,
                 },
             )
             self._scheduled_keys.add(dedup_key)
+            self.db.insert_scheduled_job({
+                "dedup_key": dedup_key,
+                "job_type": "continuous",
+                "match_id": match.id,
+                "front_end_id": match.frontEndId,
+                "odds_types": obs.odds_types,
+                "interval_seconds": interval,
+                "start_time": start_time,
+                "end_time": end_time,
+                "created_at": datetime.now(timezone.utc),
+            })
             scheduled += 1
 
             logger.info(
@@ -404,6 +532,7 @@ class MatchScheduler:
         match_id: str,
         front_end_id: str,
         odds_types: list[str],
+        dedup_key: str | None = None,
     ):
         """Execute a fetch job: call API, parse, save to DB.
 
@@ -411,6 +540,7 @@ class MatchScheduler:
             match_id: Internal match ID
             front_end_id: Display match ID (e.g., FB4342)
             odds_types: Odds type codes to fetch
+            dedup_key: Optional dedup key for DB cleanup after execution
         """
         logger.info(
             "[Fetch] Fetching %s for %s (id=%s)",
@@ -451,16 +581,52 @@ class MatchScheduler:
             )
 
             if self.tg and result["odds_snapshots"] > 0:
+                odds_details = None
+                if self.settings.TG_FETCH_INCLUDE_ODDS and target.foPools:
+                    odds_details = _extract_odds_details(target.foPools)
                 self.tg.notify_fetch(
                     front_end_id=front_end_id,
                     home=target.homeTeam.name_en,
                     away=target.awayTeam.name_en,
                     odds_types=odds_types,
                     odds_snapshots=result["odds_snapshots"],
+                    odds_details=odds_details,
                 )
 
-        except Exception:
+        except Exception as e:
             logger.exception("[Fetch] Error fetching %s", front_end_id)
+            if self.tg:
+                self.tg.notify_error(f"Fetch {front_end_id}", e)
+
+        # Clean up persistent schedule entry
+        if dedup_key:
+            self._cleanup_scheduled_job(dedup_key)
+
+    def _cleanup_scheduled_job(self, dedup_key: str) -> None:
+        """Remove a scheduled job from DB after execution.
+
+        Event jobs are always deleted (they fire once).
+        Continuous jobs are only deleted when their window has ended.
+        """
+        try:
+            job_doc = self.db.scheduled_jobs.find_one({"dedup_key": dedup_key})
+            if not job_doc:
+                return
+
+            if job_doc["job_type"] == "event":
+                self.db.delete_scheduled_job(dedup_key)
+                self._scheduled_keys.discard(dedup_key)
+            elif job_doc["job_type"] == "continuous":
+                end_time = job_doc.get("end_time")
+                if end_time:
+                    # Ensure timezone-aware comparison (MongoDB may strip tzinfo)
+                    if end_time.tzinfo is None:
+                        end_time = end_time.replace(tzinfo=timezone.utc)
+                if end_time and end_time <= datetime.now(timezone.utc):
+                    self.db.delete_scheduled_job(dedup_key)
+                    self._scheduled_keys.discard(dedup_key)
+        except Exception:
+            logger.exception("[Scheduler] Error cleaning up scheduled job %s", dedup_key)
 
     # ========================================================================
     # One-shot mode

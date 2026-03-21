@@ -255,6 +255,63 @@ Note: `POLL_INTERVAL_SECONDS` and `ODDS_TYPES` are no longer global — they are
 - All sends are fire-and-forget: failures logged but never crash the caller
 - 16 unit tests for TG client (mocked, no Telegram connection needed)
 
+**5 Enhancements - COMPLETE**
+
+*Enhancement 5 (Error notifications via TG)*:
+- `notify_error(context, error)` in `TGMessageClient` — formats error with HTML, truncates at 200 chars
+- Called in scheduler: `execute_fetch()` and `run_discovery()` catch blocks
+- 4 tests in test_tg_msg_client.py + 4 tests in test_scheduler.py
+
+*Enhancement 2 (Odds details in fetch TG message)*:
+- `TG_FETCH_INCLUDE_ODDS: bool = False` config toggle
+- `notify_fetch()` accepts `odds_details: list[dict] | None` — shows ALL lines per pool
+- `_format_pool_odds()` helper for HTML-formatted pool odds
+- `_extract_odds_details()` helper in scheduler.py extracts from foPools model
+- Same pattern in cli.py `cmd_fetch_match()`
+- Truncated at 3500 chars if message too long
+
+*Enhancement 3 (Rule details in discovery TG message)*:
+- `TG_DISCOVERY_INCLUDE_RULES: bool = False` config toggle
+- `notify_discovery()` accepts `rule_details: list[dict] | None` — shows per-rule breakdown
+- Scheduler accumulates per-rule stats during discovery loop
+
+*Enhancement 1 (CLI time-series odds reader)*:
+- `--time-series` / `--ts` flag on `get-odds` (mutually exclusive with `--all`, `--latest`, etc.)
+- `--limit N` optional flag (default None = show all)
+- `_print_odds_time_series()` function: detects columns dynamically, shows `^`/`v` change indicators, `*` for line condition changes, range and movement summary
+- 6 tests in test_cli.py
+
+*Enhancement 4 (TG bot command listener with inline buttons)*:
+- `TG_COMMANDS_ENABLED: bool = False` and `TG_COMMAND_ALLOWED_USERS: str = ""` config fields
+- **Two-phase `TGMessageClient` init**: `__init__` stores config only, `start()` starts background thread, `enable_commands(db, api_client)` wires command handler (call before `start()`)
+- Background loop switched from sleep-poll to `run_until_disconnected()` for event reception
+- `close()` calls `client.disconnect()` to break `run_until_disconnected()`
+- New `src/hkjc_scrapper/tg_commands.py`: `TGCommandHandler` with all commands + callbacks + `AddRuleWizard`
+- Commands: `/help`, `/status`, `/matches`, `/fetch`, `/odds`, `/rules`, `/addrule`, `/enablerule`, `/disablerule`, `/deleterule`
+- All commands guarded by `_check_auth()` (allows all if `TG_COMMAND_ALLOWED_USERS` is empty)
+- `/addrule` multi-step wizard with inline buttons for tournament/odds/schedule selection, text prompt for name, 5-min timeout
+- `/rules` shows enable/disable/delete buttons per rule; delete requires confirmation
+- Sync DB/API calls wrapped in `loop.run_in_executor()` to avoid blocking Telethon
+- New `tests/test_tg_commands.py`: 30 unit tests covering auth, help, rules, callbacks, wizard flow, timeout
+- `main.py` updated: `tg.enable_commands(db, client)` before `tg.start()`
+- `cli.py` updated: `tg.start()` called in `_init_tg()`
+- **Total unit tests: 206** (was 162)
+
+**Persistent Job Scheduling - COMPLETE**
+- `scheduled_jobs` MongoDB collection with dedup_key (unique), trigger_time, end_time indexes
+- 4 CRUD methods in db.py: insert_scheduled_job, delete_scheduled_job, get_all_scheduled_jobs, delete_expired_scheduled_jobs
+- Scheduler persists jobs to DB on schedule, cleans up on execution, reloads on startup
+- 20 tests in test_scheduled_jobs.py (9 DB layer + 11 scheduler persistence)
+
+**TG Bot Command UX Enhancements - COMPLETE**
+- `/rules` now shows full rule details (teams, tournaments, odds types, schedule info) with 1-based index numbers
+- `/rules` buttons labeled with index (e.g., "Disable #1", "Delete #2") for clarity with many rules
+- `/odds` shows exact fetch timestamp and relative time to kickoff (e.g., "30 min before kickoff", "15 min after kickoff")
+- Helper functions: `_format_rule_detail()`, `_format_relative_to_kickoff()` in tg_commands.py
+- 12 new tests (6 helper function tests + 3 odds fetch time tests + 2 rules detail/index tests + 1 existing test update)
+- `/fetch` response now includes actual odds values (lines, conditions, combinations) from the fetched match's foPools
+- **Total unit tests: 241** (was 206, +16 deselected integration/mongodb)
+
 **Phase 9 (Extended Testing)** - See `docs/project_plan.md` for details.
 
 ## Coding Conventions
@@ -295,3 +352,6 @@ Note: `POLL_INTERVAL_SECONDS` and `ODDS_TYPES` are no longer global — they are
 - **Phase 10 Docker**: Dockerfile uses multi-step uv install for layer caching (deps first, then source). `docker-compose.yml` uses `mongo:8` with health check — scrapper waits for MongoDB to be healthy before starting. Data persists in `mongodb_data` Docker volume. CLI commands work via `docker compose exec scrapper uv run python -m hkjc_scrapper.cli ...`.
 - **Ad-hoc CLI Commands**: Added `list-matches` (browse live matches from API), `fetch-match` (fetch + save specific match odds), `get-match` (query stored match from DB), `get-odds` (query odds history with time filters: `--latest`, `--before-kickoff`, `--all`, `--last N`). Total CLI commands: 10. Total unit tests: 121.
 - **Telegram Integration**: `TGMessageClient` wraps Telethon with sync/async interfaces. `TELEGRAM_ENABLED` toggle in Settings. Integrated into: (1) scheduler — discovery notifications when jobs scheduled, fetch notifications when odds saved, (2) CLI — `add-rule`, `enable-rule`, `disable-rule`, `delete-rule`, `fetch-match` send TG notifications, (3) new `send-message` CLI command for custom one-off messages. All sends are fire-and-forget (failures logged, never crash). Uses HTML formatting for structured messages. Session file named via `TELEGRAM_SESSION_NAME` setting. Total CLI commands: 11. Total unit tests: 137.
+- **5 Enhancements (2026-03-20)**: Implemented all 5 enhancements from `docs/enhancement_plan.md`. See "5 Enhancements" section in Current Progress for details. Key changes: (1) `notify_error()` added to TGMessageClient for error alerting; (2) `TG_FETCH_INCLUDE_ODDS` config + odds details in fetch notifications; (3) `TG_DISCOVERY_INCLUDE_RULES` config + rule breakdown in discovery notifications; (4) `--time-series/--ts` flag on `get-odds` CLI with change indicators; (5) full TG command bot with inline buttons (`tg_commands.py`), two-phase TGMessageClient init (`start()` method), `/addrule` wizard, all rule management commands. Total unit tests: 206.
+- **TGMessageClient two-phase init**: `__init__` no longer auto-starts the background thread. Callers must call `tg.start()` explicitly. `enable_commands(db, api_client)` must be called BEFORE `start()` to enable bot commands. This applies to both `main.py` and `cli.py`.
+- **TG Bot Command UX Enhancements (2026-03-21)**: Three improvements based on user testing: (1) `/rules` now shows full rule details — teams, tournaments, odds types, schedule mode/triggers — not just rule names; (2) Buttons indexed with "#1", "#2" etc. for clarity (e.g., "Disable #1", "Delete #2"); (3) `/odds` shows exact fetch timestamp + relative time to kickoff (e.g., "30 min before kickoff"). Helper functions: `_format_rule_detail()` and `_format_relative_to_kickoff()`. Total unit tests: 240.

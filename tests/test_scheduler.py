@@ -273,3 +273,67 @@ class TestSchedulerScheduleLogic:
         count = scheduler._schedule_observation(match, obs, now)
 
         assert count == 3
+
+
+# ============================================================================
+# MatchScheduler error notification tests
+# ============================================================================
+
+class TestSchedulerErrorNotifications:
+    """Tests that errors during discovery/fetch trigger TG notifications."""
+
+    def _make_scheduler(self, tg=None):
+        from unittest.mock import MagicMock
+        from hkjc_scrapper.scheduler import MatchScheduler
+        scheduler = MatchScheduler.__new__(MatchScheduler)
+        scheduler.client = MagicMock()
+        scheduler.db = MagicMock()
+        scheduler.settings = MagicMock()
+        scheduler.settings.TG_DISCOVERY_INCLUDE_RULES = False
+        scheduler._scheduler = MagicMock()
+        scheduler._shutdown_event = MagicMock()
+        scheduler._scheduled_keys = set()
+        scheduler.tg = tg
+        return scheduler
+
+    def test_execute_fetch_notifies_tg_on_error(self):
+        from unittest.mock import MagicMock
+        tg = MagicMock()
+        scheduler = self._make_scheduler(tg=tg)
+        # Make the API call raise
+        scheduler.client.send_detailed_match_list_request.side_effect = RuntimeError("API timeout")
+
+        scheduler.execute_fetch("50001111", "FB9999", ["HAD"])
+
+        tg.notify_error.assert_called_once()
+        call_args = tg.notify_error.call_args[0]
+        assert "FB9999" in call_args[0]
+        assert isinstance(call_args[1], RuntimeError)
+
+    def test_execute_fetch_no_tg_does_not_crash(self):
+        scheduler = self._make_scheduler(tg=None)
+        scheduler.client.send_detailed_match_list_request.side_effect = RuntimeError("boom")
+        # Should not raise
+        scheduler.execute_fetch("50001111", "FB9999", ["HAD"])
+
+    def test_run_discovery_notifies_tg_on_error(self):
+        from unittest.mock import MagicMock
+        tg = MagicMock()
+        scheduler = self._make_scheduler(tg=tg)
+        scheduler.client.send_basic_match_list_request.side_effect = ConnectionError("Network error")
+
+        # _discover_tournaments also uses client - make it not raise
+        scheduler.client.send_tournament_list_request.return_value = {"data": {"tournamentList": []}}
+
+        scheduler.run_discovery()
+
+        tg.notify_error.assert_called_once()
+        call_args = tg.notify_error.call_args[0]
+        assert "Discovery" in call_args[0]
+
+    def test_run_discovery_no_tg_does_not_crash(self):
+        scheduler = self._make_scheduler(tg=None)
+        scheduler.client.send_tournament_list_request.return_value = {"data": {"tournamentList": []}}
+        scheduler.client.send_basic_match_list_request.side_effect = ConnectionError("boom")
+        # Should not raise
+        scheduler.run_discovery()

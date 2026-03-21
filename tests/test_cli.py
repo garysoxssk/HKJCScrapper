@@ -651,6 +651,7 @@ class TestCmdGetOdds:
         args = _FakeArgs(
             id="M1", front_end_id="", odds="",
             latest=True, before_kickoff=False, all=False, last=0,
+            time_series=False, limit=None,
         )
         result = cmd_get_odds(args, mock_db)
         assert result == 0
@@ -668,6 +669,7 @@ class TestCmdGetOdds:
         args = _FakeArgs(
             id="M1", front_end_id="", odds="HAD",
             latest=True, before_kickoff=False, all=False, last=0,
+            time_series=False, limit=None,
         )
         result = cmd_get_odds(args, mock_db)
         assert result == 0
@@ -682,6 +684,7 @@ class TestCmdGetOdds:
         args = _FakeArgs(
             id="M1", front_end_id="", odds="HAD",
             latest=False, before_kickoff=False, all=True, last=0,
+            time_series=False, limit=None,
         )
         result = cmd_get_odds(args, mock_db)
         assert result == 0
@@ -696,6 +699,7 @@ class TestCmdGetOdds:
         args = _FakeArgs(
             id="M1", front_end_id="", odds="HAD",
             latest=False, before_kickoff=False, all=False, last=2,
+            time_series=False, limit=None,
         )
         result = cmd_get_odds(args, mock_db)
         assert result == 0
@@ -715,6 +719,7 @@ class TestCmdGetOdds:
         args = _FakeArgs(
             id="M1", front_end_id="", odds="",
             latest=True, before_kickoff=False, all=False, last=0,
+            time_series=False, limit=None,
         )
         result = cmd_get_odds(args, mock_db)
         assert result == 0
@@ -727,6 +732,7 @@ class TestCmdGetOdds:
         args = _FakeArgs(
             id="", front_end_id="FB001", odds="",
             latest=True, before_kickoff=False, all=False, last=0,
+            time_series=False, limit=None,
         )
         result = cmd_get_odds(args, mock_db)
         assert result == 0
@@ -736,6 +742,100 @@ class TestCmdGetOdds:
         args = _FakeArgs(
             id="", front_end_id="", odds="",
             latest=True, before_kickoff=False, all=False, last=0,
+            time_series=False, limit=None,
         )
         result = cmd_get_odds(args, mock_db)
         assert result == 1
+
+
+# ============================================================================
+# _print_odds_time_series tests
+# ============================================================================
+
+class TestPrintOddsTimeSeries:
+    """Tests for the time-series odds display function."""
+
+    def _make_snapshot(self, time_str, condition, combos, main=True):
+        """Helper to build a fake odds snapshot dict."""
+        from datetime import datetime, timezone
+        fetched = datetime.fromisoformat(time_str).replace(tzinfo=timezone.utc)
+        return {
+            "fetchedAt": fetched,
+            "oddsType": "CHL",
+            "inplay": True,
+            "lines": [
+                {
+                    "condition": condition,
+                    "main": main,
+                    "combinations": [
+                        {"str": col, "currentOdds": val}
+                        for col, val in combos.items()
+                    ],
+                }
+            ],
+        }
+
+    def test_single_snapshot_no_movements(self, capsys):
+        from hkjc_scrapper.cli import _print_odds_time_series
+        snaps = [self._make_snapshot("2026-03-01T19:30:00", "8.5", {"High": "1.75", "Low": "1.95"})]
+        _print_odds_time_series(snaps, "CHL", None)
+        out = capsys.readouterr().out
+        assert "CHL Time Series" in out
+        assert "1.75" in out
+        assert "Movements: 0" in out
+
+    def test_odds_increase_shows_up_indicator(self, capsys):
+        from hkjc_scrapper.cli import _print_odds_time_series
+        snaps = [
+            self._make_snapshot("2026-03-01T19:30:00", "8.5", {"High": "1.75", "Low": "1.95"}),
+            self._make_snapshot("2026-03-01T19:45:00", "8.5", {"High": "1.80", "Low": "1.90"}),
+        ]
+        _print_odds_time_series(snaps, "CHL", None)
+        out = capsys.readouterr().out
+        assert "1.80^" in out  # High went up
+        assert "1.90v" in out  # Low went down
+        assert "Movements: 2" in out
+
+    def test_line_condition_change_shows_asterisk(self, capsys):
+        from hkjc_scrapper.cli import _print_odds_time_series
+        snaps = [
+            self._make_snapshot("2026-03-01T19:30:00", "8.5", {"High": "1.75", "Low": "1.95"}),
+            self._make_snapshot("2026-03-01T19:45:00", "9.0", {"High": "1.85", "Low": "1.85"}),
+        ]
+        _print_odds_time_series(snaps, "CHL", None)
+        out = capsys.readouterr().out
+        assert "[9.0]*" in out
+        # 1 line change + 2 odds changes (both High and Low changed) = 3 movements
+        assert "Movements: 3" in out
+
+    def test_match_header_shown_when_match_doc_provided(self, capsys):
+        from hkjc_scrapper.cli import _print_odds_time_series
+        snaps = [self._make_snapshot("2026-03-01T19:30:00", "8.5", {"H": "1.75", "A": "1.95"})]
+        match_doc = {
+            "frontEndId": "FB4233",
+            "homeTeam": {"name_en": "Man Utd"},
+            "awayTeam": {"name_en": "Liverpool"},
+        }
+        _print_odds_time_series(snaps, "CHL", match_doc)
+        out = capsys.readouterr().out
+        assert "FB4233" in out
+        assert "Man Utd" in out
+        assert "Liverpool" in out
+
+    def test_range_calculated_correctly(self, capsys):
+        from hkjc_scrapper.cli import _print_odds_time_series
+        snaps = [
+            self._make_snapshot("2026-03-01T19:00:00", "8.5", {"H": "1.75"}),
+            self._make_snapshot("2026-03-01T19:30:00", "8.5", {"H": "1.75"}),
+            self._make_snapshot("2026-03-01T20:00:00", "8.5", {"H": "1.75"}),
+        ]
+        _print_odds_time_series(snaps, "HAD", None)
+        out = capsys.readouterr().out
+        assert "60min" in out
+        assert "Snapshots: 3" in out
+
+    def test_empty_snapshots(self, capsys):
+        from hkjc_scrapper.cli import _print_odds_time_series
+        _print_odds_time_series([], "CHL", None)
+        out = capsys.readouterr().out
+        assert "No snapshots" in out

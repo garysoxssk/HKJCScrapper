@@ -111,8 +111,12 @@ def main(argv: list[str] | None = None) -> int:
     db = MongoDBClient(settings.MONGODB_URI, settings.MONGODB_DATABASE)
     db.ensure_collections()
 
-    # Initialize Telegram client (auto-connects in background thread if enabled)
+    # Initialize Telegram client (two-phase init)
     tg = TGMessageClient(settings)
+    if settings.TG_COMMANDS_ENABLED:
+        tg.enable_commands(db, client)
+        logger.info("Telegram command listener: enabled")
+    tg.start()  # connects in background thread
     if tg.enabled:
         logger.info("Telegram notifications: enabled")
     else:

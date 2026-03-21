@@ -36,3 +36,6 @@ logs/
 
 # uv
 # Note: uv.lock is intentionally tracked for reproducible Docker builds
+
+# AWS commands
+docs/aws-commands.md
