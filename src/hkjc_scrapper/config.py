@@ -44,7 +44,7 @@ class Settings(BaseSettings):
             pwd = quote_plus(self.MONGODB_PASSWORD)
             self.MONGODB_URI = (
                 f"mongodb+srv://{self.MONGODB_USER}:{pwd}"
-                f"@{self.MONGODB_HOST}/?appName=scrapperDBCluster"
+                f"@{self.MONGODB_HOST}/?appName=scrapperDBCluster&retryWrites=true&w=majority&tls=true"
             )
         return self
 
