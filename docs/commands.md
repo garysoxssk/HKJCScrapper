@@ -104,6 +104,30 @@ uv run python -m hkjc_scrapper.cli delete-rule --name "La Liga Big 3"
 
 ---
 
+## Scheduled Jobs
+
+### List Scheduled Jobs
+
+View all persisted scheduled fetch jobs from the `scheduled_jobs` MongoDB collection. Times are displayed in the configured timezone (`APP_TIMEZONE`, default: HKT).
+
+```bash
+uv run python -m hkjc_scrapper.cli list-jobs
+```
+
+Example output:
+```
+Scheduled Jobs (3 jobs):
+#   FrontEndId   Type         Odds         Trigger/Window (HKT)              Created
+-----------------------------------------------------------------------------------------------
+1   FB6755       continuous   CHL          every 300s, 03:00–04:45 Apr 07    2026-04-06 01:30
+2   FB4233       event        HAD,HHA      2026-04-07 19:30                  2026-04-06 12:00
+3   FB4234       event        HDC          2026-04-07 20:00                  2026-04-06 12:00
+```
+
+Shows "No scheduled jobs." if the collection is empty.
+
+---
+
 ## Ad-Hoc Data Retrieval
 
 ### List Matches
@@ -241,6 +265,13 @@ uv run python -m hkjc_scrapper.cli get-odds --id 50062141 --odds HAD --all
 # Last N snapshots
 uv run python -m hkjc_scrapper.cli get-odds --id 50062141 --odds HAD --last 5
 
+# Time-series view with change indicators
+uv run python -m hkjc_scrapper.cli get-odds --id 50062141 --odds HAD --time-series
+uv run python -m hkjc_scrapper.cli get-odds --id 50062141 --odds HAD --ts  # short alias
+
+# Limit time-series rows
+uv run python -m hkjc_scrapper.cli get-odds --id 50062141 --odds HAD --ts --limit 10
+
 # By front-end ID
 uv run python -m hkjc_scrapper.cli get-odds --front-end-id FB4233 --odds HHA --all
 ```
@@ -262,6 +293,27 @@ Match: FB4233 (50062141)
   2026-02-22 14:30:00    HAD    Yes      H=1.55 D=4.00 A=4.20
   2026-02-22 14:45:00    HAD    Yes      H=1.40 D=4.50 A=5.00
 ```
+
+Example output (`--time-series` mode):
+```
+Match: FB4233 (50062141)
+  Nottingham Forest vs Liverpool
+
+  HAD Time Series (6 snapshots):
+  Time (UTC)             Line    H       D       A
+  ---------------------------------------------------------------
+  2026-02-22 11:30:00            2.50    3.20    2.80
+  2026-02-22 13:00:00            2.45v   3.30^   2.85^
+  2026-02-22 14:00:00            2.10v   3.50^   3.20^
+  2026-02-22 14:15:00            1.80v   3.80^   3.60^
+  2026-02-22 14:30:00            1.55v   4.00^   4.20^
+  2026-02-22 14:45:00            1.40v   4.50^   5.00^
+
+  Range: H 1.40–2.50 | D 3.20–4.50 | A 2.80–5.00
+  Movement: H -1.10 (6 changes) | D +1.30 (5 changes) | A +2.20 (5 changes)
+```
+
+Change indicators: `^` = odds increased, `v` = odds decreased, `*` = line condition changed
 
 ### Typical Query Workflow
 
@@ -302,12 +354,13 @@ The following events send Telegram messages automatically when `TELEGRAM_ENABLED
 | Event | When | Message Content |
 |-------|------|-----------------|
 | **Service startup** | `main` starts | Mode, active rule count, timestamp |
-| **Discovery cycle** | New jobs scheduled | Match count, rule count, jobs scheduled |
-| **Odds fetched** | Scheduler or `fetch-match` saves data | Match teams, odds types, snapshot count |
+| **Discovery cycle** | New jobs scheduled | Match count, rule count, jobs scheduled. Optionally includes per-rule breakdown (see `TG_DISCOVERY_INCLUDE_RULES`). |
+| **Odds fetched** | Scheduler or `fetch-match` saves data | Match teams, odds types, snapshot count. Optionally includes full odds values (see `TG_FETCH_INCLUDE_ODDS`). |
 | **Rule added** | `add-rule` | Rule name, filters |
 | **Rule enabled** | `enable-rule` | Rule name |
 | **Rule disabled** | `disable-rule` | Rule name |
 | **Rule deleted** | `delete-rule` | Rule name |
+| **Error** | Any scheduler/fetch error | Context, error message (truncated at 200 chars) |
 
 ### Telegram Setup
 
@@ -328,6 +381,43 @@ The following events send Telegram messages automatically when `TELEGRAM_ENABLED
 ### Disable Notifications
 
 Set `TELEGRAM_ENABLED=false` in `.env` or unset the credentials. All notification calls become no-ops.
+
+---
+
+## Telegram Bot Commands
+
+When `TG_COMMANDS_ENABLED=true`, the bot listens for interactive commands in the Telegram group. Users can manage rules, query data, and fetch odds directly from Telegram.
+
+Optionally restrict access by setting `TG_COMMAND_ALLOWED_USERS` to a comma-separated list of Telegram user IDs. If empty, all group members can use commands.
+
+### Available Commands
+
+| Command | Description |
+|---------|-------------|
+| `/help` | Show all available commands |
+| `/status` | Show bot status: uptime, active rules |
+| `/jobs` | View scheduled fetch jobs from DB (times in HKT) |
+| `/matches` | List current matches from HKJC API |
+| `/fetch <frontEndId> <oddsTypes>` | Fetch and save odds for a match (e.g., `/fetch FB4233 HAD,HHA`) |
+| `/odds <frontEndId> [oddsType]` | Query stored odds history for a match |
+| `/rules` | List all watch rules with inline enable/disable/delete buttons |
+| `/addrule` | Start the interactive add-rule wizard (multi-step with inline buttons) |
+| `/enablerule <name>` | Enable a watch rule by name |
+| `/disablerule <name>` | Disable a watch rule by name |
+| `/deleterule <name>` | Delete a watch rule (requires confirmation) |
+
+### Add Rule Wizard
+
+The `/addrule` command starts a multi-step wizard with inline buttons:
+
+1. **Tournament selection** — tap tournaments to toggle, then "Done"
+2. **Odds type selection** — tap odds types to toggle, then "Done"
+3. **Schedule mode** — choose "Event" or "Continuous"
+4. **Event trigger** (event mode) — choose trigger event and optional minutes
+5. **Interval + boundaries** (continuous mode) — choose polling interval and start/end events
+6. **Rule name** — type the name as a text message
+
+The wizard times out after 5 minutes of inactivity.
 
 ---
 
@@ -461,6 +551,7 @@ Set in `.env.local` / `.env.prod` or as OS environment variables:
 | `MONGODB_DATABASE` | `hkjc` | Database name |
 | `GRAPHQL_ENDPOINT` | `https://info.cld.hkjc.com/graphql/base/` | HKJC API URL |
 | `DISCOVERY_INTERVAL_SECONDS` | `900` | How often to discover matches (seconds) |
+| `APP_TIMEZONE` | `Asia/Hong_Kong` | IANA timezone for log timestamps and display |
 | `LOG_LEVEL` | `INFO` | Logging level (DEBUG, INFO, WARNING, ERROR) |
 | `TELEGRAM_ENABLED` | `true` | Enable/disable Telegram notifications |
 | `TELEGRAM_APP_ID` | *(required)* | Telegram API app ID (from my.telegram.org) |
@@ -468,3 +559,7 @@ Set in `.env.local` / `.env.prod` or as OS environment variables:
 | `TELEGRAM_GROUP_ID` | *(required)* | Telegram group numeric chat ID (e.g., `-1001234567890`) |
 | `TELEGRAM_BOT_TOKEN` | *(required)* | Bot token from @BotFather |
 | `TELEGRAM_SESSION_NAME` | `hkjc_scrapper_msg_bot` | Telethon session file name |
+| `TG_FETCH_INCLUDE_ODDS` | `false` | Include full odds values in fetch notifications |
+| `TG_DISCOVERY_INCLUDE_RULES` | `false` | Include per-rule breakdown in discovery notifications |
+| `TG_COMMANDS_ENABLED` | `false` | Enable interactive bot commands in Telegram |
+| `TG_COMMAND_ALLOWED_USERS` | *(empty)* | Comma-separated Telegram user IDs allowed to use commands (empty = all allowed) |

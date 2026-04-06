@@ -39,6 +39,7 @@ class MongoDBClient:
         self.matches_current: Collection = self.db["matches_current"]
         self.odds_history: Collection = self.db["odds_history"]
         self.watch_rules: Collection = self.db["watch_rules"]
+        self.scheduled_jobs: Collection = self.db["scheduled_jobs"]
 
     def close(self):
         """Close the MongoDB connection."""
@@ -88,6 +89,11 @@ class MongoDBClient:
 
         # watch_rules unique index on name
         self.watch_rules.create_index("name", unique=True)
+
+        # scheduled_jobs indexes
+        self.scheduled_jobs.create_index("dedup_key", unique=True)
+        self.scheduled_jobs.create_index("trigger_time")
+        self.scheduled_jobs.create_index("end_time")
 
         logger.info("Database collections and indexes ensured")
 
@@ -424,6 +430,57 @@ class MongoDBClient:
             logger.info("Deleted watch rule: %s", name)
             return True
         return False
+
+    # ========================================================================
+    # Scheduled jobs operations (persistent job scheduling)
+    # ========================================================================
+
+    def insert_scheduled_job(self, job_doc: dict) -> None:
+        """Upsert a scheduled job by dedup_key (idempotent).
+
+        Args:
+            job_doc: Dict with dedup_key, job_type, match_id, front_end_id,
+                     odds_types, and type-specific fields (trigger_time for
+                     event; interval_seconds, start_time, end_time for continuous).
+        """
+        self.scheduled_jobs.replace_one(
+            {"dedup_key": job_doc["dedup_key"]},
+            job_doc,
+            upsert=True,
+        )
+
+    def delete_scheduled_job(self, dedup_key: str) -> bool:
+        """Delete a scheduled job by dedup_key.
+
+        Returns:
+            True if a document was deleted.
+        """
+        result = self.scheduled_jobs.delete_one({"dedup_key": dedup_key})
+        return result.deleted_count > 0
+
+    def get_all_scheduled_jobs(self) -> list[dict]:
+        """Return all scheduled job documents."""
+        return list(self.scheduled_jobs.find())
+
+    def delete_expired_scheduled_jobs(self, now: datetime) -> int:
+        """Delete scheduled jobs that have expired.
+
+        Deletes event jobs where trigger_time <= now and continuous jobs
+        where end_time <= now.
+
+        Args:
+            now: Current UTC datetime
+
+        Returns:
+            Number of documents deleted.
+        """
+        result = self.scheduled_jobs.delete_many({
+            "$or": [
+                {"job_type": "event", "trigger_time": {"$lte": now}},
+                {"job_type": "continuous", "end_time": {"$lte": now}},
+            ]
+        })
+        return result.deleted_count
 
     # ========================================================================
     # Reference data operations

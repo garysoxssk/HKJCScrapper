@@ -1,5 +1,6 @@
 """Unit tests for cli.py using mongomock (no real MongoDB required)."""
 
+from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
 import pytest
@@ -12,11 +13,13 @@ from hkjc_scrapper.cli import (
     cmd_fetch_match,
     cmd_get_match,
     cmd_get_odds,
+    cmd_list_jobs,
     cmd_list_matches,
     cmd_list_rules,
     cmd_show_rule,
     parse_observation,
 )
+from hkjc_scrapper.config import Settings
 from hkjc_scrapper.models import (
     Combination,
     FoPool,
@@ -651,6 +654,7 @@ class TestCmdGetOdds:
         args = _FakeArgs(
             id="M1", front_end_id="", odds="",
             latest=True, before_kickoff=False, all=False, last=0,
+            time_series=False, limit=None,
         )
         result = cmd_get_odds(args, mock_db)
         assert result == 0
@@ -668,6 +672,7 @@ class TestCmdGetOdds:
         args = _FakeArgs(
             id="M1", front_end_id="", odds="HAD",
             latest=True, before_kickoff=False, all=False, last=0,
+            time_series=False, limit=None,
         )
         result = cmd_get_odds(args, mock_db)
         assert result == 0
@@ -682,6 +687,7 @@ class TestCmdGetOdds:
         args = _FakeArgs(
             id="M1", front_end_id="", odds="HAD",
             latest=False, before_kickoff=False, all=True, last=0,
+            time_series=False, limit=None,
         )
         result = cmd_get_odds(args, mock_db)
         assert result == 0
@@ -696,6 +702,7 @@ class TestCmdGetOdds:
         args = _FakeArgs(
             id="M1", front_end_id="", odds="HAD",
             latest=False, before_kickoff=False, all=False, last=2,
+            time_series=False, limit=None,
         )
         result = cmd_get_odds(args, mock_db)
         assert result == 0
@@ -715,6 +722,7 @@ class TestCmdGetOdds:
         args = _FakeArgs(
             id="M1", front_end_id="", odds="",
             latest=True, before_kickoff=False, all=False, last=0,
+            time_series=False, limit=None,
         )
         result = cmd_get_odds(args, mock_db)
         assert result == 0
@@ -727,6 +735,7 @@ class TestCmdGetOdds:
         args = _FakeArgs(
             id="", front_end_id="FB001", odds="",
             latest=True, before_kickoff=False, all=False, last=0,
+            time_series=False, limit=None,
         )
         result = cmd_get_odds(args, mock_db)
         assert result == 0
@@ -736,6 +745,161 @@ class TestCmdGetOdds:
         args = _FakeArgs(
             id="", front_end_id="", odds="",
             latest=True, before_kickoff=False, all=False, last=0,
+            time_series=False, limit=None,
         )
         result = cmd_get_odds(args, mock_db)
         assert result == 1
+
+
+# ============================================================================
+# _print_odds_time_series tests
+# ============================================================================
+
+class TestPrintOddsTimeSeries:
+    """Tests for the time-series odds display function."""
+
+    def _make_snapshot(self, time_str, condition, combos, main=True):
+        """Helper to build a fake odds snapshot dict."""
+        from datetime import datetime, timezone
+        fetched = datetime.fromisoformat(time_str).replace(tzinfo=timezone.utc)
+        return {
+            "fetchedAt": fetched,
+            "oddsType": "CHL",
+            "inplay": True,
+            "lines": [
+                {
+                    "condition": condition,
+                    "main": main,
+                    "combinations": [
+                        {"str": col, "currentOdds": val}
+                        for col, val in combos.items()
+                    ],
+                }
+            ],
+        }
+
+    def test_single_snapshot_no_movements(self, capsys):
+        from hkjc_scrapper.cli import _print_odds_time_series
+        snaps = [self._make_snapshot("2026-03-01T19:30:00", "8.5", {"High": "1.75", "Low": "1.95"})]
+        _print_odds_time_series(snaps, "CHL", None)
+        out = capsys.readouterr().out
+        assert "CHL Time Series" in out
+        assert "1.75" in out
+        assert "Movements: 0" in out
+
+    def test_odds_increase_shows_up_indicator(self, capsys):
+        from hkjc_scrapper.cli import _print_odds_time_series
+        snaps = [
+            self._make_snapshot("2026-03-01T19:30:00", "8.5", {"High": "1.75", "Low": "1.95"}),
+            self._make_snapshot("2026-03-01T19:45:00", "8.5", {"High": "1.80", "Low": "1.90"}),
+        ]
+        _print_odds_time_series(snaps, "CHL", None)
+        out = capsys.readouterr().out
+        assert "1.80^" in out  # High went up
+        assert "1.90v" in out  # Low went down
+        assert "Movements: 2" in out
+
+    def test_line_condition_change_shows_asterisk(self, capsys):
+        from hkjc_scrapper.cli import _print_odds_time_series
+        snaps = [
+            self._make_snapshot("2026-03-01T19:30:00", "8.5", {"High": "1.75", "Low": "1.95"}),
+            self._make_snapshot("2026-03-01T19:45:00", "9.0", {"High": "1.85", "Low": "1.85"}),
+        ]
+        _print_odds_time_series(snaps, "CHL", None)
+        out = capsys.readouterr().out
+        assert "[9.0]*" in out
+        # 1 line change + 2 odds changes (both High and Low changed) = 3 movements
+        assert "Movements: 3" in out
+
+    def test_match_header_shown_when_match_doc_provided(self, capsys):
+        from hkjc_scrapper.cli import _print_odds_time_series
+        snaps = [self._make_snapshot("2026-03-01T19:30:00", "8.5", {"H": "1.75", "A": "1.95"})]
+        match_doc = {
+            "frontEndId": "FB4233",
+            "homeTeam": {"name_en": "Man Utd"},
+            "awayTeam": {"name_en": "Liverpool"},
+        }
+        _print_odds_time_series(snaps, "CHL", match_doc)
+        out = capsys.readouterr().out
+        assert "FB4233" in out
+        assert "Man Utd" in out
+        assert "Liverpool" in out
+
+    def test_range_calculated_correctly(self, capsys):
+        from hkjc_scrapper.cli import _print_odds_time_series
+        snaps = [
+            self._make_snapshot("2026-03-01T19:00:00", "8.5", {"H": "1.75"}),
+            self._make_snapshot("2026-03-01T19:30:00", "8.5", {"H": "1.75"}),
+            self._make_snapshot("2026-03-01T20:00:00", "8.5", {"H": "1.75"}),
+        ]
+        _print_odds_time_series(snaps, "HAD", None)
+        out = capsys.readouterr().out
+        assert "60min" in out
+        assert "Snapshots: 3" in out
+
+    def test_empty_snapshots(self, capsys):
+        from hkjc_scrapper.cli import _print_odds_time_series
+        _print_odds_time_series([], "CHL", None)
+        out = capsys.readouterr().out
+        assert "No snapshots" in out
+
+
+# ============================================================================
+# list-jobs command
+# ============================================================================
+
+class _FakeSettings:
+    """Minimal settings stub for list-jobs tests."""
+    def __init__(self):
+        from zoneinfo import ZoneInfo
+        self.APP_TIMEZONE = "Asia/Hong_Kong"
+        self.tz = ZoneInfo("Asia/Hong_Kong")
+
+
+class TestCmdListJobs:
+    """Tests for list-jobs command."""
+
+    def test_list_jobs_empty(self, mock_db, capsys):
+        args = _FakeArgs()
+        result = cmd_list_jobs(args, mock_db, _FakeSettings())
+        assert result == 0
+        assert "No scheduled jobs" in capsys.readouterr().out
+
+    def test_list_jobs_event(self, mock_db, capsys):
+        mock_db.insert_scheduled_job({
+            "dedup_key": "50001111:HAD:2026-03-10T19:30:00+08:00",
+            "job_type": "event",
+            "match_id": "50001111",
+            "front_end_id": "FB9999",
+            "odds_types": ["HAD"],
+            "trigger_time": datetime(2026, 3, 10, 11, 30, tzinfo=timezone.utc),
+            "created_at": datetime(2026, 3, 10, 10, 0, tzinfo=timezone.utc),
+        })
+        args = _FakeArgs()
+        result = cmd_list_jobs(args, mock_db, _FakeSettings())
+        assert result == 0
+        out = capsys.readouterr().out
+        assert "FB9999" in out
+        assert "event" in out
+        assert "HAD" in out
+
+    def test_list_jobs_continuous(self, mock_db, capsys):
+        mock_db.insert_scheduled_job({
+            "dedup_key": "50001111:CHL:continuous:2026-03-10T20:00:00+08:00",
+            "job_type": "continuous",
+            "match_id": "50001111",
+            "front_end_id": "FB6755",
+            "odds_types": ["CHL"],
+            "interval_seconds": 300,
+            "start_time": datetime(2026, 3, 10, 12, 0, tzinfo=timezone.utc),
+            "end_time": datetime(2026, 3, 10, 13, 45, tzinfo=timezone.utc),
+            "created_at": datetime(2026, 3, 10, 10, 0, tzinfo=timezone.utc),
+        })
+        args = _FakeArgs()
+        result = cmd_list_jobs(args, mock_db, _FakeSettings())
+        assert result == 0
+        out = capsys.readouterr().out
+        assert "FB6755" in out
+        assert "continuous" in out
+        assert "CHL" in out
+        assert "300s" in out

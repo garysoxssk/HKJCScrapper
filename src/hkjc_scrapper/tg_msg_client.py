@@ -62,7 +62,13 @@ def _parse_group_id(raw: str) -> int | str:
 
 
 class TGMessageClient:
-    """Telegram notification client with persistent connection and dedicated event loop."""
+    """Telegram notification client with persistent connection and dedicated event loop.
+
+    Two-phase initialization:
+      1. __init__() — stores config, no background thread started yet
+      2. enable_commands(db, api_client) — optional, call before start() if TG_COMMANDS_ENABLED
+      3. start() — starts the background thread and connects to Telegram
+    """
 
     def __init__(self, settings: Optional[Settings] = None):
         self.settings = settings or Settings()
@@ -78,13 +84,39 @@ class TGMessageClient:
         self._thread: Optional[threading.Thread] = None
         self._ready = threading.Event()
         self._shutdown = threading.Event()
-
-        if self._enabled:
-            self._start_event_loop_thread()
+        # Command handler — set via enable_commands() before start()
+        self._cmd_db = None
+        self._cmd_api = None
+        self._cmd_handler = None
 
     @property
     def enabled(self) -> bool:
         return self._enabled
+
+    # ========================================================================
+    # Two-phase startup
+    # ========================================================================
+
+    def enable_commands(self, db, api_client) -> None:
+        """Enable interactive command handling. Must be called before start().
+
+        Stores the db and api_client references. The actual TGCommandHandler
+        is created in _async_init() once the TelegramClient is available.
+
+        Args:
+            db: MongoDBClient instance
+            api_client: HKJCGraphQLClient instance
+        """
+        self._cmd_db = db
+        self._cmd_api = api_client
+
+    def start(self) -> None:
+        """Start the background event loop thread and connect to Telegram.
+
+        Call after enable_commands() (if using command mode) and before any send_sync calls.
+        """
+        if self._enabled:
+            self._start_event_loop_thread()
 
     # ========================================================================
     # Thread-based event loop management
@@ -94,7 +126,7 @@ class TGMessageClient:
         """Start a dedicated background thread with its own event loop."""
 
         def run_loop():
-            """Thread target: create loop, initialize client, run forever."""
+            """Thread target: create loop, initialize client, run until disconnected."""
             self._loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self._loop)
 
@@ -102,9 +134,9 @@ class TGMessageClient:
                 self._loop.run_until_complete(self._async_init())
                 self._ready.set()
 
-                # Keep loop running for future messages
-                while not self._shutdown.is_set():
-                    self._loop.run_until_complete(asyncio.sleep(0.1))
+                # run_until_disconnected keeps the loop alive AND processes
+                # incoming events (commands, callbacks) if handlers are registered
+                self._loop.run_until_complete(self._client.run_until_disconnected())
             except Exception:
                 logger.exception("[TG] Event loop thread crashed")
                 self._ready.set()  # Unblock waiting threads even on error
@@ -146,6 +178,15 @@ class TGMessageClient:
         target = _parse_group_id(self.settings.TELEGRAM_GROUP_ID)
         self._entity = await self._client.get_entity(target)
         logger.info("[TG] Connected (group: %s)", self.settings.TELEGRAM_GROUP_ID)
+
+        # Register command handlers if enable_commands() was called
+        if self._cmd_db is not None:
+            from hkjc_scrapper.tg_commands import TGCommandHandler
+            self._cmd_handler = TGCommandHandler(
+                self._client, self._cmd_db, self._cmd_api, self.settings
+            )
+            self._cmd_handler.register_handlers()
+            logger.info("[TG] Command handlers registered")
 
     # ========================================================================
     # Core send (async - runs in dedicated loop via thread-safe call)
@@ -218,7 +259,8 @@ class TGMessageClient:
         logger.info("[TG] Shutting down...")
         self._shutdown.set()
 
-        if self._loop and self._client and self._client.is_connected():
+        # Disconnect the client to break run_until_disconnected()
+        if self._loop and self._client:
             try:
                 future = asyncio.run_coroutine_threadsafe(
                     self._client.disconnect(), self._loop
@@ -237,15 +279,34 @@ class TGMessageClient:
     # ========================================================================
 
     def notify_discovery(
-        self, match_count: int, rule_count: int, jobs_scheduled: int
+        self,
+        match_count: int,
+        rule_count: int,
+        jobs_scheduled: int,
+        rule_details: list[dict] | None = None,
     ) -> None:
-        """Notify about a discovery cycle result."""
+        """Notify about a discovery cycle result.
+
+        Args:
+            match_count: Total matches found from HKJC API
+            rule_count: Number of active watch rules
+            jobs_scheduled: Number of new fetch jobs scheduled
+            rule_details: Optional per-rule breakdown. Each dict:
+                {"name": str, "matched": int, "jobs": int}
+        """
         msg = (
             "<b>Discovery Complete</b>\n"
             f"Matches found: {match_count}\n"
             f"Active rules: {rule_count}\n"
             f"New jobs scheduled: {jobs_scheduled}"
         )
+        if rule_details:
+            msg += "\n\n<b>Rules matched:</b>"
+            for rd in rule_details:
+                msg += (
+                    f"\n• {rd['name']}: "
+                    f"{rd['matched']} match(es), {rd['jobs']} job(s)"
+                )
         self.send_sync(msg)
 
     def notify_fetch(
@@ -255,8 +316,20 @@ class TGMessageClient:
         away: str,
         odds_types: list[str],
         odds_snapshots: int,
+        odds_details: list[dict] | None = None,
     ) -> None:
-        """Notify about a completed fetch + save."""
+        """Notify about a completed fetch + save.
+
+        Args:
+            front_end_id: Match front-end ID (e.g., FB4233)
+            home: Home team name
+            away: Away team name
+            odds_types: List of odds type codes fetched
+            odds_snapshots: Number of snapshots saved
+            odds_details: Optional list of pool dicts with all line odds.
+                Each dict: {"oddsType": str, "lines": [{"condition": str|None,
+                "main": bool, "combinations": [{"str": str, "currentOdds": str}]}]}
+        """
         odds_str = ", ".join(odds_types)
         msg = (
             f"<b>Odds Fetched</b>\n"
@@ -264,7 +337,40 @@ class TGMessageClient:
             f"Types: {odds_str}\n"
             f"Snapshots saved: {odds_snapshots}"
         )
+        if odds_details:
+            msg += "\n"
+            for detail in odds_details:
+                msg += f"\n{self._format_pool_odds(detail)}"
+            # Truncate if too long (Telegram limit is 4096)
+            if len(msg) > 3500:
+                msg = msg[:3497] + "..."
         self.send_sync(msg)
+
+    @staticmethod
+    def _format_pool_odds(detail: dict) -> str:
+        """Format one pool's odds (all lines) as a compact HTML string.
+
+        Args:
+            detail: Pool dict with oddsType and lines list
+
+        Returns:
+            Formatted string like "<b>HHA</b>:\n  [-1.5] H=1.85 | A=1.95 (main)\n  [-2.0] H=2.10 | A=1.70"
+        """
+        odds_type = detail.get("oddsType", "?")
+        lines = detail.get("lines", [])
+        parts = [f"<b>{odds_type}</b>:"]
+        for line in lines:
+            condition = line.get("condition")
+            is_main = line.get("main", False)
+            combinations = line.get("combinations", [])
+            comb_str = " | ".join(
+                f"{c.get('str', '?')}={c.get('currentOdds', '?')}"
+                for c in combinations
+            )
+            cond_prefix = f"[{condition}] " if condition else ""
+            main_suffix = " (main)" if is_main else ""
+            parts.append(f"  {cond_prefix}{comb_str}{main_suffix}")
+        return "\n".join(parts)
 
     def notify_scheduled(
         self,
@@ -307,3 +413,19 @@ class TGMessageClient:
     def notify_custom(self, message: str) -> None:
         """Send a custom plain-text message."""
         self.send_sync(message)
+
+    def notify_error(self, context: str, error: Exception) -> None:
+        """Notify about an error during a scheduled operation.
+
+        Args:
+            context: Short description of what was running (e.g., "Discovery cycle")
+            error: The exception that was raised
+        """
+        error_str = str(error)
+        if len(error_str) > 200:
+            error_str = error_str[:200] + "..."
+        msg = (
+            f"<b>⚠️ Error</b>: {context}\n"
+            f"<code>{error_str}</code>"
+        )
+        self.send_sync(msg)

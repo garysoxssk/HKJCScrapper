@@ -169,9 +169,11 @@ def mock_db():
     client.matches_current = client.db["matches_current"]
     client.odds_history = client.db["odds_history"]
     client.watch_rules = client.db["watch_rules"]
+    client.scheduled_jobs = client.db["scheduled_jobs"]
 
     # Create unique index on watch_rules.name (mongomock supports this)
     client.watch_rules.create_index("name", unique=True)
+    client.scheduled_jobs.create_index("dedup_key", unique=True)
 
     yield client
 
@@ -199,11 +201,13 @@ def real_db():
     db.db.drop_collection("watch_rules")
     db.db.drop_collection("odds_types_ref")
     db.db.drop_collection("tournaments_ref")
+    db.db.drop_collection("scheduled_jobs")
 
     # Re-assign collection refs after drop
     db.matches_current = db.db["matches_current"]
     db.odds_history = db.db["odds_history"]
     db.watch_rules = db.db["watch_rules"]
+    db.scheduled_jobs = db.db["scheduled_jobs"]
 
     yield db
 
@@ -213,4 +217,5 @@ def real_db():
     db.db.drop_collection("watch_rules")
     db.db.drop_collection("odds_types_ref")
     db.db.drop_collection("tournaments_ref")
+    db.db.drop_collection("scheduled_jobs")
     db.close()

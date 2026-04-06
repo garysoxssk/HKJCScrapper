@@ -18,6 +18,7 @@ Usage:
 
 import argparse
 import sys
+from datetime import datetime, timezone
 
 from pymongo.errors import DuplicateKeyError
 
@@ -237,6 +238,69 @@ def cmd_delete_rule(args, db: MongoDBClient, tg: TGMessageClient | None = None) 
 
 
 # ============================================================================
+# Scheduled jobs viewer
+# ============================================================================
+
+def cmd_list_jobs(args, db: MongoDBClient, settings: Settings) -> int:
+    """Handle list-jobs command: show persisted scheduled fetch jobs."""
+    jobs = db.get_all_scheduled_jobs()
+    if not jobs:
+        print("No scheduled jobs.")
+        return 0
+
+    tz = settings.tz
+    print(f"Scheduled Jobs ({len(jobs)} jobs):")
+    print(f"{'#':<4} {'FrontEndId':<13} {'Type':<13} {'Odds':<14} {'Trigger/Window':35} {'Created'}")
+    print("-" * 110)
+
+    for i, j in enumerate(jobs, 1):
+        feid = j.get("front_end_id", "?")
+        jtype = j.get("job_type", "?")
+        odds = ",".join(j.get("odds_types", []))
+
+        if jtype == "event":
+            tt = j.get("trigger_time")
+            if tt:
+                if tt.tzinfo is None:
+                    tt = tt.replace(tzinfo=timezone.utc)
+                window = tt.astimezone(tz).strftime("%Y-%m-%d %H:%M")
+            else:
+                window = "?"
+        elif jtype == "continuous":
+            interval = j.get("interval_seconds", "?")
+            st = j.get("start_time")
+            et = j.get("end_time")
+            if st and et:
+                if st.tzinfo is None:
+                    st = st.replace(tzinfo=timezone.utc)
+                if et.tzinfo is None:
+                    et = et.replace(tzinfo=timezone.utc)
+                st_hk = st.astimezone(tz)
+                et_hk = et.astimezone(tz)
+                window = (
+                    f"every {interval}s, "
+                    f"{st_hk.strftime('%H:%M')}–{et_hk.strftime('%H:%M')} "
+                    f"{st_hk.strftime('%b %d')}"
+                )
+            else:
+                window = f"every {interval}s"
+        else:
+            window = "?"
+
+        created = j.get("created_at")
+        if created:
+            if created.tzinfo is None:
+                created = created.replace(tzinfo=timezone.utc)
+            created_str = created.astimezone(tz).strftime("%Y-%m-%d %H:%M")
+        else:
+            created_str = "?"
+
+        print(f"{i:<4} {feid:<13} {jtype:<13} {odds:<14} {window:35} {created_str}")
+
+    return 0
+
+
+# ============================================================================
 # Ad-hoc data retrieval commands
 # ============================================================================
 
@@ -293,7 +357,7 @@ def cmd_list_matches(args, db: MongoDBClient, client: HKJCGraphQLClient) -> int:
     return 0
 
 
-def cmd_fetch_match(args, db: MongoDBClient, client: HKJCGraphQLClient, tg: TGMessageClient | None = None) -> int:
+def cmd_fetch_match(args, db: MongoDBClient, client: HKJCGraphQLClient, tg: TGMessageClient | None = None, settings: Settings | None = None) -> int:
     """Handle fetch-match command: fetch odds for a specific match and save."""
     # Parse odds types
     if not args.odds:
@@ -373,12 +437,17 @@ def cmd_fetch_match(args, db: MongoDBClient, client: HKJCGraphQLClient, tg: TGMe
         f"{result['odds_snapshots']} odds snapshots"
     )
     if tg and result["odds_snapshots"] > 0:
+        odds_details = None
+        if settings and settings.TG_FETCH_INCLUDE_ODDS and target.foPools:
+            from hkjc_scrapper.scheduler import _extract_odds_details
+            odds_details = _extract_odds_details(target.foPools)
         tg.notify_fetch(
             front_end_id=target.frontEndId,
             home=target.homeTeam.name_en,
             away=target.awayTeam.name_en,
             odds_types=odds_types,
             odds_snapshots=result["odds_snapshots"],
+            odds_details=odds_details,
         )
     return 0
 
@@ -473,6 +542,19 @@ def cmd_get_odds(args, db: MongoDBClient) -> int:
     print(f"  Recorded odds types: {', '.join(sorted(available_types))}")
 
     # Determine time filter
+    if args.time_series:
+        if not odds_type_filter:
+            print("Error: --odds is required when using --time-series (e.g., --odds CHL)")
+            return 1
+        history = db.get_odds_history(match_id, odds_type=odds_type_filter)
+        if not history:
+            print(f"\n  No odds history found for {odds_type_filter}.")
+            return 0
+        if args.limit:
+            history = history[-args.limit:]
+        _print_odds_time_series(history, odds_type_filter, match_doc)
+        return 0
+
     if args.all:
         # All snapshots
         history = db.get_odds_history(match_id, odds_type=odds_type_filter)
@@ -542,6 +624,146 @@ def cmd_get_odds(args, db: MongoDBClient) -> int:
             _print_odds_snapshot_row(snap)
 
     return 0
+
+
+def _print_odds_time_series(
+    snapshots: list[dict], odds_type: str, match_doc: dict | None
+) -> None:
+    """Print a time-series view of odds changes with movement indicators.
+
+    For each snapshot, shows the main line odds and compares to the previous
+    snapshot. Uses indicators:
+      ^ = odds increased (went up)
+      v = odds decreased (went down)
+      * = line condition changed from previous snapshot
+
+    Args:
+        snapshots: List of odds history documents sorted ascending by fetchedAt
+        odds_type: The odds type code (e.g., "CHL", "HAD")
+        match_doc: Optional match document for header display
+    """
+    if not snapshots:
+        print("  No snapshots to display.")
+        return
+
+    # Header
+    if match_doc:
+        home = match_doc.get("homeTeam", {}).get("name_en", "?")
+        away = match_doc.get("awayTeam", {}).get("name_en", "?")
+        feid = match_doc.get("frontEndId", "?")
+        print(f"\n  {odds_type} Time Series — {feid} ({home} vs {away})")
+    else:
+        print(f"\n  {odds_type} Time Series")
+    print("  " + "=" * 76)
+
+    # Detect column names from first snapshot's main line combinations
+    col_names: list[str] = []
+    for snap in snapshots:
+        for line in snap.get("lines", []):
+            if line.get("main"):
+                col_names = [c.get("str", "?") for c in line.get("combinations", [])]
+                break
+        if col_names:
+            break
+    # Fallback: use first line
+    if not col_names and snapshots:
+        first_snap = snapshots[0]
+        lines = first_snap.get("lines", [])
+        if lines:
+            col_names = [c.get("str", "?") for c in lines[0].get("combinations", [])]
+
+    # Build header row
+    col_width = 10
+    header = f"  {'Time (UTC)':<22} {'Line':<10}"
+    for col in col_names:
+        header += f" {col:<{col_width}}"
+    header += "  Status"
+    print(header)
+    print("  " + "-" * 76)
+
+    # Track previous snapshot for comparison
+    prev_odds: dict[str, str] = {}  # col_name -> currentOdds
+    prev_condition: str | None = None
+    movements = 0
+    first_time: datetime | None = None
+    last_time: datetime | None = None
+
+    for snap in snapshots:
+        fetched = snap.get("fetchedAt")
+        time_str = fetched.strftime("%Y-%m-%d %H:%M:%S") if fetched else "?"
+        if fetched:
+            if first_time is None:
+                first_time = fetched
+            last_time = fetched
+
+        # Find main line (fall back to first line)
+        main_line = None
+        for line in snap.get("lines", []):
+            if line.get("main"):
+                main_line = line
+                break
+        if main_line is None and snap.get("lines"):
+            main_line = snap["lines"][0]
+
+        condition = main_line.get("condition") if main_line else None
+        combinations = main_line.get("combinations", []) if main_line else []
+
+        # Build condition display with change marker
+        condition_str = f"[{condition}]" if condition else "[-]"
+        if prev_condition is not None and condition != prev_condition:
+            condition_str += "*"
+            movements += 1
+
+        # Build odds columns with change indicators
+        curr_odds: dict[str, str] = {}
+        col_displays = []
+        for comb in combinations:
+            name = comb.get("str", "?")
+            val = comb.get("currentOdds", "?")
+            curr_odds[name] = val
+
+            if name in prev_odds and prev_odds[name] != val:
+                movements += 1
+                try:
+                    if float(val) > float(prev_odds[name]):
+                        indicator = "^"
+                    else:
+                        indicator = "v"
+                except (ValueError, TypeError):
+                    indicator = "~"
+                col_displays.append(f"{val}{indicator}")
+            else:
+                col_displays.append(val)
+
+        # Pad missing columns
+        while len(col_displays) < len(col_names):
+            col_displays.append("-")
+
+        # Pool status
+        pool_status = snap.get("poolStatus", "")
+
+        row = f"  {time_str:<22} {condition_str:<10}"
+        for val in col_displays:
+            row += f" {val:<{col_width}}"
+        if pool_status:
+            row += f"  {pool_status}"
+        print(row)
+
+        prev_odds = curr_odds
+        prev_condition = condition
+
+    # Summary footer
+    print("  " + "-" * 76)
+    n = len(snapshots)
+    if first_time and last_time and first_time != last_time:
+        delta_min = int((last_time - first_time).total_seconds() / 60)
+        range_str = f"{delta_min}min"
+    else:
+        range_str = "0min"
+
+    note = "  (* = line changed, ^ = odds up, v = odds down)"
+    print(f"  Snapshots: {n} | Range: {range_str} | Movements: {movements}")
+    print(note)
 
 
 def cmd_send_message(args, db: MongoDBClient, tg: TGMessageClient | None = None) -> int:
@@ -746,10 +968,18 @@ def build_parser() -> argparse.ArgumentParser:
     go_parser.add_argument("--id", default="", help="Match ID")
     go_parser.add_argument("--front-end-id", default="", help="Front-end match ID")
     go_parser.add_argument("--odds", default="", help="Filter by odds type (e.g., HAD)")
-    go_parser.add_argument("--latest", action="store_true", default=True, help="Latest snapshot per type (default)")
-    go_parser.add_argument("--before-kickoff", action="store_true", help="Last snapshot before kickoff")
-    go_parser.add_argument("--all", action="store_true", help="Show all snapshots (time series)")
-    go_parser.add_argument("--last", type=int, default=0, help="Show last N snapshots")
+    go_parser.add_argument("--limit", type=int, default=None, help="Limit number of rows shown (time-series mode only)")
+    # Mutually exclusive display mode flags
+    go_mode = go_parser.add_mutually_exclusive_group()
+    go_mode.add_argument("--latest", action="store_true", default=False, help="Latest snapshot per type (default if no flag given)")
+    go_mode.add_argument("--before-kickoff", action="store_true", help="Last snapshot before kickoff")
+    go_mode.add_argument("--all", action="store_true", help="Show all snapshots")
+    go_mode.add_argument("--last", type=int, default=0, help="Show last N snapshots")
+    go_mode.add_argument("--time-series", "--ts", action="store_true", dest="time_series",
+                         help="Show time-series view with change indicators (requires --odds)")
+
+    # list-jobs (scheduler)
+    subparsers.add_parser("list-jobs", help="List scheduled fetch jobs from DB")
 
     # send-message (Telegram)
     sm_parser = subparsers.add_parser(
@@ -761,13 +991,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _init_tg(settings: Settings) -> TGMessageClient | None:
-    """Initialize Telegram client for CLI commands. Returns None on failure.
-
-    Note: TGMessageClient now auto-connects in background thread on init.
-    """
+    """Initialize Telegram client for CLI commands. Returns None on failure."""
     tg = TGMessageClient(settings)
     if not tg.enabled:
         return None
+    tg.start()
     # Give the background thread a moment to connect
     import time
     time.sleep(1)
@@ -820,7 +1048,9 @@ def main(argv: list[str] | None = None) -> int:
         if args.command in tg_commands:
             tg = _init_tg(settings)
 
-        if args.command in readonly_db_commands:
+        if args.command == "list-jobs":
+            return cmd_list_jobs(args, db, settings)
+        elif args.command in readonly_db_commands:
             return readonly_db_commands[args.command](args, db)
         elif args.command in readonly_api_commands:
             client = HKJCGraphQLClient(settings)
@@ -829,7 +1059,7 @@ def main(argv: list[str] | None = None) -> int:
             return rule_write_commands[args.command](args, db, tg=tg)
         elif args.command == "fetch-match":
             client = HKJCGraphQLClient(settings)
-            return cmd_fetch_match(args, db, client, tg=tg)
+            return cmd_fetch_match(args, db, client, tg=tg, settings=settings)
         elif args.command == "send-message":
             return cmd_send_message(args, db, tg=tg)
         else:

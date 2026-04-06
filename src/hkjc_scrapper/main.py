@@ -12,7 +12,9 @@ import argparse
 import logging
 import os
 import sys
+from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
+from zoneinfo import ZoneInfo
 
 from hkjc_scrapper.client import HKJCGraphQLClient
 from hkjc_scrapper.config import Settings
@@ -28,7 +30,21 @@ LOG_FORMAT = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 LOG_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
-def setup_logging(level: str) -> None:
+class TZFormatter(logging.Formatter):
+    """Logging formatter that converts timestamps to a specified timezone."""
+
+    def __init__(self, fmt=None, datefmt=None, tz: ZoneInfo | None = None):
+        super().__init__(fmt, datefmt)
+        self._tz = tz or ZoneInfo("UTC")
+
+    def formatTime(self, record, datefmt=None):
+        dt = datetime.fromtimestamp(record.created, tz=self._tz)
+        if datefmt:
+            return dt.strftime(datefmt)
+        return dt.strftime("%Y-%m-%d %H:%M:%S")
+
+
+def setup_logging(level: str, tz: ZoneInfo | None = None) -> None:
     """Configure logging to both stdout and rotating file.
 
     Log files are written to logs/hkjc_scrapper.log with automatic
@@ -38,7 +54,7 @@ def setup_logging(level: str) -> None:
     root_logger = logging.getLogger()
     root_logger.setLevel(log_level)
 
-    formatter = logging.Formatter(LOG_FORMAT, datefmt=LOG_DATE_FORMAT)
+    formatter = TZFormatter(LOG_FORMAT, datefmt=LOG_DATE_FORMAT, tz=tz)
 
     # Console handler (stdout)
     console_handler = logging.StreamHandler(sys.stdout)
@@ -80,7 +96,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Load settings
     settings = Settings()
-    setup_logging(settings.LOG_LEVEL)
+    setup_logging(settings.LOG_LEVEL, tz=settings.tz)
 
     logger = logging.getLogger("hkjc_scrapper")
 
@@ -99,6 +115,7 @@ def main(argv: list[str] | None = None) -> int:
     logger.info("  Profile: %s", settings.APP_ENV)
     logger.info("  MongoDB: %s / %s", log_uri, settings.MONGODB_DATABASE)
     logger.info("  API endpoint: %s", settings.GRAPHQL_ENDPOINT)
+    logger.info("  Timezone: %s", settings.APP_TIMEZONE)
     logger.info("  Mode: %s", "single fetch" if args.once else "service")
     if not args.once:
         logger.info(
@@ -111,8 +128,12 @@ def main(argv: list[str] | None = None) -> int:
     db = MongoDBClient(settings.MONGODB_URI, settings.MONGODB_DATABASE)
     db.ensure_collections()
 
-    # Initialize Telegram client (auto-connects in background thread if enabled)
+    # Initialize Telegram client (two-phase init)
     tg = TGMessageClient(settings)
+    if settings.TG_COMMANDS_ENABLED:
+        tg.enable_commands(db, client)
+        logger.info("Telegram command listener: enabled")
+    tg.start()  # connects in background thread
     if tg.enabled:
         logger.info("Telegram notifications: enabled")
     else:
