@@ -21,8 +21,10 @@ from hkjc_scrapper.tg_commands import (
 # ============================================================================
 
 def _make_settings(allowed_users: str = ""):
+    from zoneinfo import ZoneInfo
     s = MagicMock()
     s.TG_COMMAND_ALLOWED_USERS = allowed_users
+    s.tz = ZoneInfo("Asia/Hong_Kong")
     return s
 
 
@@ -568,6 +570,52 @@ class TestFormatRuleDetail:
         }
         result = _format_rule_detail(rule)
         assert "all matches" in result
+
+
+# ============================================================================
+# _cmd_jobs — scheduled jobs viewer
+# ============================================================================
+
+class TestCmdJobs:
+
+    def test_jobs_empty(self):
+        handler = _make_handler()
+        handler.db.get_all_scheduled_jobs.return_value = []
+        event = _make_event(text="/jobs")
+        _run(handler._cmd_jobs(event))
+        msg = event.reply.call_args[0][0]
+        assert "No scheduled jobs" in msg
+
+    def test_jobs_shows_details(self):
+        from datetime import timezone as tz
+        handler = _make_handler()
+        handler.db.get_all_scheduled_jobs.return_value = [
+            {
+                "front_end_id": "FB6755",
+                "job_type": "continuous",
+                "odds_types": ["CHL"],
+                "interval_seconds": 300,
+                "start_time": datetime(2026, 4, 7, 19, 0, tzinfo=tz.utc),
+                "end_time": datetime(2026, 4, 7, 20, 45, tzinfo=tz.utc),
+                "created_at": datetime(2026, 4, 6, 10, 0, tzinfo=tz.utc),
+            },
+            {
+                "front_end_id": "FB4233",
+                "job_type": "event",
+                "odds_types": ["HAD", "HHA"],
+                "trigger_time": datetime(2026, 4, 7, 11, 30, tzinfo=tz.utc),
+                "created_at": datetime(2026, 4, 6, 10, 0, tzinfo=tz.utc),
+            },
+        ]
+        event = _make_event(text="/jobs")
+        _run(handler._cmd_jobs(event))
+        msg = event.reply.call_args[0][0]
+        assert "Scheduled Jobs (2)" in msg
+        assert "FB6755" in msg
+        assert "CHL" in msg
+        assert "300s" in msg
+        assert "FB4233" in msg
+        assert "HAD" in msg
 
 
 # ============================================================================

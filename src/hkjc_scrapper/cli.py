@@ -238,6 +238,69 @@ def cmd_delete_rule(args, db: MongoDBClient, tg: TGMessageClient | None = None) 
 
 
 # ============================================================================
+# Scheduled jobs viewer
+# ============================================================================
+
+def cmd_list_jobs(args, db: MongoDBClient, settings: Settings) -> int:
+    """Handle list-jobs command: show persisted scheduled fetch jobs."""
+    jobs = db.get_all_scheduled_jobs()
+    if not jobs:
+        print("No scheduled jobs.")
+        return 0
+
+    tz = settings.tz
+    print(f"Scheduled Jobs ({len(jobs)} jobs):")
+    print(f"{'#':<4} {'FrontEndId':<13} {'Type':<13} {'Odds':<14} {'Trigger/Window':35} {'Created'}")
+    print("-" * 110)
+
+    for i, j in enumerate(jobs, 1):
+        feid = j.get("front_end_id", "?")
+        jtype = j.get("job_type", "?")
+        odds = ",".join(j.get("odds_types", []))
+
+        if jtype == "event":
+            tt = j.get("trigger_time")
+            if tt:
+                if tt.tzinfo is None:
+                    tt = tt.replace(tzinfo=timezone.utc)
+                window = tt.astimezone(tz).strftime("%Y-%m-%d %H:%M")
+            else:
+                window = "?"
+        elif jtype == "continuous":
+            interval = j.get("interval_seconds", "?")
+            st = j.get("start_time")
+            et = j.get("end_time")
+            if st and et:
+                if st.tzinfo is None:
+                    st = st.replace(tzinfo=timezone.utc)
+                if et.tzinfo is None:
+                    et = et.replace(tzinfo=timezone.utc)
+                st_hk = st.astimezone(tz)
+                et_hk = et.astimezone(tz)
+                window = (
+                    f"every {interval}s, "
+                    f"{st_hk.strftime('%H:%M')}–{et_hk.strftime('%H:%M')} "
+                    f"{st_hk.strftime('%b %d')}"
+                )
+            else:
+                window = f"every {interval}s"
+        else:
+            window = "?"
+
+        created = j.get("created_at")
+        if created:
+            if created.tzinfo is None:
+                created = created.replace(tzinfo=timezone.utc)
+            created_str = created.astimezone(tz).strftime("%Y-%m-%d %H:%M")
+        else:
+            created_str = "?"
+
+        print(f"{i:<4} {feid:<13} {jtype:<13} {odds:<14} {window:35} {created_str}")
+
+    return 0
+
+
+# ============================================================================
 # Ad-hoc data retrieval commands
 # ============================================================================
 
@@ -915,6 +978,9 @@ def build_parser() -> argparse.ArgumentParser:
     go_mode.add_argument("--time-series", "--ts", action="store_true", dest="time_series",
                          help="Show time-series view with change indicators (requires --odds)")
 
+    # list-jobs (scheduler)
+    subparsers.add_parser("list-jobs", help="List scheduled fetch jobs from DB")
+
     # send-message (Telegram)
     sm_parser = subparsers.add_parser(
         "send-message", help="Send a custom message to Telegram group"
@@ -982,7 +1048,9 @@ def main(argv: list[str] | None = None) -> int:
         if args.command in tg_commands:
             tg = _init_tg(settings)
 
-        if args.command in readonly_db_commands:
+        if args.command == "list-jobs":
+            return cmd_list_jobs(args, db, settings)
+        elif args.command in readonly_db_commands:
             return readonly_db_commands[args.command](args, db)
         elif args.command in readonly_api_commands:
             client = HKJCGraphQLClient(settings)

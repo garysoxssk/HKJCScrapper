@@ -310,7 +310,19 @@ Note: `POLL_INTERVAL_SECONDS` and `ODDS_TYPES` are no longer global — they are
 - Helper functions: `_format_rule_detail()`, `_format_relative_to_kickoff()` in tg_commands.py
 - 12 new tests (6 helper function tests + 3 odds fetch time tests + 2 rules detail/index tests + 1 existing test update)
 - `/fetch` response now includes actual odds values (lines, conditions, combinations) from the fetched match's foPools
-- **Total unit tests: 241** (was 206, +16 deselected integration/mongodb)
+
+**Timezone & Scheduler Bugfixes - COMPLETE**
+- **Critical bug fix**: `_reload_scheduled_jobs()` used `start_date=now` for continuous jobs, causing them to start immediately after restart regardless of original kickoff boundary. Fixed to use `max(start_time, now)`.
+- **Configurable timezone**: `APP_TIMEZONE` setting (default: `Asia/Hong_Kong`) with `settings.tz` cached property returning `ZoneInfo`.
+- **HKT log timestamps**: Custom `TZFormatter` in `main.py` converts log timestamps to configured timezone. Startup log shows timezone.
+- **Timezone-aware reload**: Added `tzinfo` guards for naive datetimes from MongoDB on event and continuous job reload.
+- **Scheduler log readability**: Event/continuous log messages show times with HKT suffix via `.astimezone(HK_TZ)`.
+
+**Scheduled Jobs Viewer - COMPLETE**
+- New CLI command: `list-jobs` — shows persisted scheduled jobs with front-end ID, type, odds, trigger/window (in HKT), created time.
+- New TG command: `/jobs` — shows scheduled jobs in Telegram with same details.
+- Registered in both CLI dispatch and TG `register_handlers()`.
+- **Total unit tests: 253** (was 241, +16 deselected integration/mongodb)
 
 **Phase 9 (Extended Testing)** - See `docs/project_plan.md` for details.
 
@@ -355,3 +367,5 @@ Note: `POLL_INTERVAL_SECONDS` and `ODDS_TYPES` are no longer global — they are
 - **5 Enhancements (2026-03-20)**: Implemented all 5 enhancements from `docs/enhancement_plan.md`. See "5 Enhancements" section in Current Progress for details. Key changes: (1) `notify_error()` added to TGMessageClient for error alerting; (2) `TG_FETCH_INCLUDE_ODDS` config + odds details in fetch notifications; (3) `TG_DISCOVERY_INCLUDE_RULES` config + rule breakdown in discovery notifications; (4) `--time-series/--ts` flag on `get-odds` CLI with change indicators; (5) full TG command bot with inline buttons (`tg_commands.py`), two-phase TGMessageClient init (`start()` method), `/addrule` wizard, all rule management commands. Total unit tests: 206.
 - **TGMessageClient two-phase init**: `__init__` no longer auto-starts the background thread. Callers must call `tg.start()` explicitly. `enable_commands(db, api_client)` must be called BEFORE `start()` to enable bot commands. This applies to both `main.py` and `cli.py`.
 - **TG Bot Command UX Enhancements (2026-03-21)**: Three improvements based on user testing: (1) `/rules` now shows full rule details — teams, tournaments, odds types, schedule mode/triggers — not just rule names; (2) Buttons indexed with "#1", "#2" etc. for clarity (e.g., "Disable #1", "Delete #2"); (3) `/odds` shows exact fetch timestamp + relative time to kickoff (e.g., "30 min before kickoff"). Helper functions: `_format_rule_detail()` and `_format_relative_to_kickoff()`. Total unit tests: 240.
+- **Scheduler Reload Bug (2026-04-06)**: Discovered continuous jobs start immediately after restart instead of waiting for kickoff. Root cause: `_reload_scheduled_jobs()` used `start_date=now` instead of `max(start_time, now)`. Also added timezone-aware datetime guards for MongoDB reload, expired window cleanup, and configurable `APP_TIMEZONE` with `TZFormatter` for HKT log timestamps.
+- **Scheduled Jobs Viewer (2026-04-06)**: New `list-jobs` CLI command and `/jobs` TG command to inspect persisted scheduled jobs from `scheduled_jobs` MongoDB collection. Shows front-end ID, type, odds types, trigger/window times in configured timezone. Total CLI commands: 12. Total TG commands: 11. Total unit tests: 253.

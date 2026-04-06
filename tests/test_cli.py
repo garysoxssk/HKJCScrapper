@@ -1,5 +1,6 @@
 """Unit tests for cli.py using mongomock (no real MongoDB required)."""
 
+from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
 import pytest
@@ -12,11 +13,13 @@ from hkjc_scrapper.cli import (
     cmd_fetch_match,
     cmd_get_match,
     cmd_get_odds,
+    cmd_list_jobs,
     cmd_list_matches,
     cmd_list_rules,
     cmd_show_rule,
     parse_observation,
 )
+from hkjc_scrapper.config import Settings
 from hkjc_scrapper.models import (
     Combination,
     FoPool,
@@ -839,3 +842,64 @@ class TestPrintOddsTimeSeries:
         _print_odds_time_series([], "CHL", None)
         out = capsys.readouterr().out
         assert "No snapshots" in out
+
+
+# ============================================================================
+# list-jobs command
+# ============================================================================
+
+class _FakeSettings:
+    """Minimal settings stub for list-jobs tests."""
+    def __init__(self):
+        from zoneinfo import ZoneInfo
+        self.APP_TIMEZONE = "Asia/Hong_Kong"
+        self.tz = ZoneInfo("Asia/Hong_Kong")
+
+
+class TestCmdListJobs:
+    """Tests for list-jobs command."""
+
+    def test_list_jobs_empty(self, mock_db, capsys):
+        args = _FakeArgs()
+        result = cmd_list_jobs(args, mock_db, _FakeSettings())
+        assert result == 0
+        assert "No scheduled jobs" in capsys.readouterr().out
+
+    def test_list_jobs_event(self, mock_db, capsys):
+        mock_db.insert_scheduled_job({
+            "dedup_key": "50001111:HAD:2026-03-10T19:30:00+08:00",
+            "job_type": "event",
+            "match_id": "50001111",
+            "front_end_id": "FB9999",
+            "odds_types": ["HAD"],
+            "trigger_time": datetime(2026, 3, 10, 11, 30, tzinfo=timezone.utc),
+            "created_at": datetime(2026, 3, 10, 10, 0, tzinfo=timezone.utc),
+        })
+        args = _FakeArgs()
+        result = cmd_list_jobs(args, mock_db, _FakeSettings())
+        assert result == 0
+        out = capsys.readouterr().out
+        assert "FB9999" in out
+        assert "event" in out
+        assert "HAD" in out
+
+    def test_list_jobs_continuous(self, mock_db, capsys):
+        mock_db.insert_scheduled_job({
+            "dedup_key": "50001111:CHL:continuous:2026-03-10T20:00:00+08:00",
+            "job_type": "continuous",
+            "match_id": "50001111",
+            "front_end_id": "FB6755",
+            "odds_types": ["CHL"],
+            "interval_seconds": 300,
+            "start_time": datetime(2026, 3, 10, 12, 0, tzinfo=timezone.utc),
+            "end_time": datetime(2026, 3, 10, 13, 45, tzinfo=timezone.utc),
+            "created_at": datetime(2026, 3, 10, 10, 0, tzinfo=timezone.utc),
+        })
+        args = _FakeArgs()
+        result = cmd_list_jobs(args, mock_db, _FakeSettings())
+        assert result == 0
+        out = capsys.readouterr().out
+        assert "FB6755" in out
+        assert "continuous" in out
+        assert "CHL" in out
+        assert "300s" in out

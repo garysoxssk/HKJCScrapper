@@ -5,7 +5,8 @@ of the HKJC Scrapper via Telegram. Uses Telethon's event system.
 
 Commands:
     /help           - Show available commands
-    /status         - Bot status (uptime, jobs, rules)
+    /status         - Bot status (uptime, rules)
+    /jobs           - View scheduled fetch jobs from DB
     /matches        - Browse current HKJC matches with tournament buttons
     /fetch          - Fetch odds for a match (guided with buttons)
     /odds           - View odds history (guided with buttons)
@@ -177,6 +178,7 @@ class TGCommandHandler:
         self.client.on(events.NewMessage(pattern=r"^/odds"))(self._cmd_odds)
         self.client.on(events.NewMessage(pattern=r"^/rules"))(self._cmd_rules)
         self.client.on(events.NewMessage(pattern=r"^/addrule"))(self._cmd_addrule)
+        self.client.on(events.NewMessage(pattern=r"^/jobs"))(self._cmd_jobs)
         self.client.on(events.NewMessage(pattern=r"^/enablerule"))(self._cmd_enablerule)
         self.client.on(events.NewMessage(pattern=r"^/disablerule"))(self._cmd_disablerule)
         self.client.on(events.NewMessage(pattern=r"^/deleterule"))(self._cmd_deleterule)
@@ -217,7 +219,8 @@ class TGCommandHandler:
         text = (
             "<b>HKJC Scrapper Commands</b>\n\n"
             "/help — Show this help message\n"
-            "/status — Bot status (uptime, rules, jobs)\n"
+            "/status — Bot status (uptime, rules)\n"
+            "/jobs — View scheduled fetch jobs\n"
             "/matches — Browse current HKJC matches\n"
             "/fetch — Fetch and save odds for a match\n"
             "/odds — View stored odds history\n"
@@ -243,6 +246,58 @@ class TGCommandHandler:
             f"Uptime: {uptime_str}"
         )
         await event.reply(text, parse_mode="html")
+
+    async def _cmd_jobs(self, event) -> None:
+        """Handle /jobs command — show persisted scheduled fetch jobs."""
+        if not await self._check_auth(event):
+            return
+        loop = asyncio.get_event_loop()
+        jobs = await loop.run_in_executor(None, self.db.get_all_scheduled_jobs)
+        if not jobs:
+            await event.reply("No scheduled jobs.")
+            return
+
+        tz = self.settings.tz
+        lines = [f"<b>Scheduled Jobs ({len(jobs)})</b>", ""]
+        for i, j in enumerate(jobs, 1):
+            feid = j.get("front_end_id", "?")
+            odds = ", ".join(j.get("odds_types", []))
+            jtype = j.get("job_type", "?")
+
+            if jtype == "event":
+                tt = j.get("trigger_time")
+                if tt:
+                    if tt.tzinfo is None:
+                        tt = tt.replace(tzinfo=timezone.utc)
+                    window = tt.astimezone(tz).strftime("%Y-%m-%d %H:%M HKT")
+                else:
+                    window = "?"
+            elif jtype == "continuous":
+                interval = j.get("interval_seconds", "?")
+                st = j.get("start_time")
+                et = j.get("end_time")
+                if st and et:
+                    if st.tzinfo is None:
+                        st = st.replace(tzinfo=timezone.utc)
+                    if et.tzinfo is None:
+                        et = et.replace(tzinfo=timezone.utc)
+                    st_hk = st.astimezone(tz)
+                    et_hk = et.astimezone(tz)
+                    window = (
+                        f"every {interval}s, "
+                        f"{st_hk.strftime('%H:%M')}–{et_hk.strftime('%H:%M')} "
+                        f"{st_hk.strftime('%b %d')} HKT"
+                    )
+                else:
+                    window = f"every {interval}s"
+            else:
+                window = "?"
+
+            lines.append(f"{i}. <b>{feid}</b> — {odds} ({jtype})")
+            lines.append(f"   {window}")
+
+        text = "\n".join(lines)
+        await event.reply(_truncate(text), parse_mode="html")
 
     async def _cmd_matches(self, event) -> None:
         """Handle /matches command — show tournament selection buttons."""

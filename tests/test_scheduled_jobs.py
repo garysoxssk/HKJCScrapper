@@ -1,7 +1,9 @@
 """Tests for persistent job scheduling (DB layer + scheduler integration)."""
 
+import logging
 from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock
+from zoneinfo import ZoneInfo
 
 import pytest
 
@@ -38,6 +40,61 @@ def _make_match(
             id="TN1", code="EPL", name_en="Eng Premier", name_ch="英超"
         ),
     )
+
+
+# ============================================================================
+# Timezone config + log formatter tests
+# ============================================================================
+
+
+class TestTimezoneConfig:
+
+    def test_app_timezone_default_is_hk(self):
+        from hkjc_scrapper.config import Settings
+
+        s = Settings(MONGODB_URI="mongodb://localhost:27017")
+        assert s.APP_TIMEZONE == "Asia/Hong_Kong"
+        assert s.tz == ZoneInfo("Asia/Hong_Kong")
+
+    def test_app_timezone_custom(self):
+        from hkjc_scrapper.config import Settings
+
+        s = Settings(
+            MONGODB_URI="mongodb://localhost:27017",
+            APP_TIMEZONE="America/New_York",
+        )
+        assert s.tz == ZoneInfo("America/New_York")
+
+
+class TestTZFormatter:
+
+    def test_formats_in_specified_timezone(self):
+        from hkjc_scrapper.main import TZFormatter
+
+        hk_tz = ZoneInfo("Asia/Hong_Kong")
+        fmt = TZFormatter("%(asctime)s %(message)s", datefmt="%H:%M", tz=hk_tz)
+
+        record = logging.LogRecord(
+            name="test", level=logging.INFO, pathname="",
+            lineno=0, msg="hello", args=(), exc_info=None,
+        )
+        # Force a known timestamp: 2026-03-10 12:00:00 UTC = 20:00 HKT
+        record.created = datetime(2026, 3, 10, 12, 0, 0, tzinfo=timezone.utc).timestamp()
+        result = fmt.formatTime(record, datefmt="%H:%M")
+        assert result == "20:00"
+
+    def test_defaults_to_utc(self):
+        from hkjc_scrapper.main import TZFormatter
+
+        fmt = TZFormatter("%(asctime)s %(message)s", datefmt="%H:%M")
+
+        record = logging.LogRecord(
+            name="test", level=logging.INFO, pathname="",
+            lineno=0, msg="hello", args=(), exc_info=None,
+        )
+        record.created = datetime(2026, 3, 10, 12, 0, 0, tzinfo=timezone.utc).timestamp()
+        result = fmt.formatTime(record, datefmt="%H:%M")
+        assert result == "12:00"
 
 
 # ============================================================================
@@ -481,6 +538,88 @@ class TestSchedulerPersistence:
         scheduler.start()
 
         assert call_order == ["reload", "scheduler_start"]
+
+    def test_reload_continuous_respects_start_time(self, mock_db):
+        """Reload must not start continuous job before its start_time boundary."""
+        scheduler = self._make_scheduler(mock_db=mock_db)
+
+        # start_time is 2 hours in the future, end_time is 4 hours in the future
+        future_start = datetime.now(timezone.utc) + timedelta(hours=2)
+        future_end = datetime.now(timezone.utc) + timedelta(hours=4)
+        mock_db.insert_scheduled_job({
+            "dedup_key": "future:continuous",
+            "job_type": "continuous",
+            "match_id": "50001111",
+            "front_end_id": "FB9999",
+            "odds_types": ["CHL"],
+            "interval_seconds": 300,
+            "start_time": future_start,
+            "end_time": future_end,
+            "created_at": datetime.now(timezone.utc),
+        })
+
+        scheduler._reload_scheduled_jobs()
+
+        # Job should be scheduled with start_date=future_start (not now)
+        scheduler._scheduler.add_job.assert_called_once()
+        call_args = scheduler._scheduler.add_job.call_args
+        trigger = call_args.kwargs.get("trigger") or call_args[1].get("trigger")
+        if trigger is None:
+            trigger = call_args[0][1] if len(call_args[0]) > 1 else None
+        # Check the trigger's start_date is the future start, not now
+        assert trigger is not None
+        assert trigger.start_date >= future_start - timedelta(seconds=2)
+
+    def test_reload_continuous_skips_expired_window(self, mock_db):
+        """Reload deletes continuous jobs whose window has already ended."""
+        scheduler = self._make_scheduler(mock_db=mock_db)
+
+        past_start = datetime.now(timezone.utc) - timedelta(hours=4)
+        past_end = datetime.now(timezone.utc) - timedelta(hours=2)
+        mock_db.insert_scheduled_job({
+            "dedup_key": "expired:continuous",
+            "job_type": "continuous",
+            "match_id": "50001111",
+            "front_end_id": "FB9999",
+            "odds_types": ["CHL"],
+            "interval_seconds": 300,
+            "start_time": past_start,
+            "end_time": past_end,
+            "created_at": datetime.now(timezone.utc),
+        })
+
+        scheduler._reload_scheduled_jobs()
+
+        # Expired job should be cleaned up by delete_expired_scheduled_jobs
+        scheduler._scheduler.add_job.assert_not_called()
+
+    def test_reload_continuous_adjusts_past_start_to_now(self, mock_db):
+        """If start_time is past but end_time is future, use now as start."""
+        scheduler = self._make_scheduler(mock_db=mock_db)
+
+        past_start = datetime.now(timezone.utc) - timedelta(minutes=30)
+        future_end = datetime.now(timezone.utc) + timedelta(hours=1)
+        mock_db.insert_scheduled_job({
+            "dedup_key": "midway:continuous",
+            "job_type": "continuous",
+            "match_id": "50001111",
+            "front_end_id": "FB9999",
+            "odds_types": ["CHL"],
+            "interval_seconds": 300,
+            "start_time": past_start,
+            "end_time": future_end,
+            "created_at": datetime.now(timezone.utc),
+        })
+
+        scheduler._reload_scheduled_jobs()
+
+        scheduler._scheduler.add_job.assert_called_once()
+        call_args = scheduler._scheduler.add_job.call_args
+        trigger = call_args.kwargs.get("trigger") or call_args[1].get("trigger")
+        if trigger is None:
+            trigger = call_args[0][1] if len(call_args[0]) > 1 else None
+        # start_date should be ~now (past start_time gets bumped up)
+        assert trigger.start_date > past_start
 
     def test_execute_fetch_without_dedup_key_no_cleanup(self, mock_db):
         """execute_fetch with no dedup_key (backward compat) skips cleanup."""

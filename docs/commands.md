@@ -104,6 +104,30 @@ uv run python -m hkjc_scrapper.cli delete-rule --name "La Liga Big 3"
 
 ---
 
+## Scheduled Jobs
+
+### List Scheduled Jobs
+
+View all persisted scheduled fetch jobs from the `scheduled_jobs` MongoDB collection. Times are displayed in the configured timezone (`APP_TIMEZONE`, default: HKT).
+
+```bash
+uv run python -m hkjc_scrapper.cli list-jobs
+```
+
+Example output:
+```
+Scheduled Jobs (3 jobs):
+#   FrontEndId   Type         Odds         Trigger/Window (HKT)              Created
+-----------------------------------------------------------------------------------------------
+1   FB6755       continuous   CHL          every 300s, 03:00–04:45 Apr 07    2026-04-06 01:30
+2   FB4233       event        HAD,HHA      2026-04-07 19:30                  2026-04-06 12:00
+3   FB4234       event        HDC          2026-04-07 20:00                  2026-04-06 12:00
+```
+
+Shows "No scheduled jobs." if the collection is empty.
+
+---
+
 ## Ad-Hoc Data Retrieval
 
 ### List Matches
@@ -371,7 +395,8 @@ Optionally restrict access by setting `TG_COMMAND_ALLOWED_USERS` to a comma-sepa
 | Command | Description |
 |---------|-------------|
 | `/help` | Show all available commands |
-| `/status` | Show bot status: uptime, active rules, scheduled jobs |
+| `/status` | Show bot status: uptime, active rules |
+| `/jobs` | View scheduled fetch jobs from DB (times in HKT) |
 | `/matches` | List current matches from HKJC API |
 | `/fetch <frontEndId> <oddsTypes>` | Fetch and save odds for a match (e.g., `/fetch FB4233 HAD,HHA`) |
 | `/odds <frontEndId> [oddsType]` | Query stored odds history for a match |
@@ -526,6 +551,7 @@ Set in `.env.local` / `.env.prod` or as OS environment variables:
 | `MONGODB_DATABASE` | `hkjc` | Database name |
 | `GRAPHQL_ENDPOINT` | `https://info.cld.hkjc.com/graphql/base/` | HKJC API URL |
 | `DISCOVERY_INTERVAL_SECONDS` | `900` | How often to discover matches (seconds) |
+| `APP_TIMEZONE` | `Asia/Hong_Kong` | IANA timezone for log timestamps and display |
 | `LOG_LEVEL` | `INFO` | Logging level (DEBUG, INFO, WARNING, ERROR) |
 | `TELEGRAM_ENABLED` | `true` | Enable/disable Telegram notifications |
 | `TELEGRAM_APP_ID` | *(required)* | Telegram API app ID (from my.telegram.org) |

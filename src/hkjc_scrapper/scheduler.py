@@ -233,6 +233,9 @@ class MatchScheduler:
 
             if job_doc["job_type"] == "event":
                 trigger_time = job_doc["trigger_time"]
+                # Ensure timezone-aware (MongoDB may strip tzinfo)
+                if trigger_time and trigger_time.tzinfo is None:
+                    trigger_time = trigger_time.replace(tzinfo=timezone.utc)
                 self._scheduler.add_job(
                     self.execute_fetch,
                     trigger=DateTrigger(run_date=trigger_time),
@@ -249,13 +252,29 @@ class MatchScheduler:
                 reloaded += 1
 
             elif job_doc["job_type"] == "continuous":
+                start_time = job_doc.get("start_time")
                 end_time = job_doc["end_time"]
                 interval = job_doc["interval_seconds"]
+                # Ensure timezone-aware (MongoDB may strip tzinfo)
+                if start_time and start_time.tzinfo is None:
+                    start_time = start_time.replace(tzinfo=timezone.utc)
+                if end_time and end_time.tzinfo is None:
+                    end_time = end_time.replace(tzinfo=timezone.utc)
+                # Respect original start boundary — don't start before kickoff
+                if start_time:
+                    effective_start = max(start_time, now)
+                else:
+                    effective_start = now
+                # Skip if window has already ended
+                if end_time and end_time <= now:
+                    self.db.delete_scheduled_job(dedup_key)
+                    self._scheduled_keys.discard(dedup_key)
+                    continue
                 self._scheduler.add_job(
                     self.execute_fetch,
                     trigger=IntervalTrigger(
                         seconds=interval,
-                        start_date=now,
+                        start_date=effective_start,
                         end_date=end_time,
                     ),
                     id=f"reload:{dedup_key}",
@@ -446,7 +465,9 @@ class MatchScheduler:
                     "[Scheduler] Scheduled %s fetch for %s at %s (%s)",
                     odds_key,
                     match.frontEndId,
-                    trigger_time.strftime("%Y-%m-%d %H:%M"),
+                    trigger_time.astimezone(HK_TZ).strftime(
+                        "%Y-%m-%d %H:%M HKT"
+                    ),
                     trigger.event,
                 )
 
@@ -513,12 +534,12 @@ class MatchScheduler:
 
             logger.info(
                 "[Scheduler] Scheduled %s continuous for %s"
-                " every %ds (%s to %s)",
+                " every %ds (%s to %s HKT)",
                 odds_key,
                 match.frontEndId,
                 interval,
-                effective_start.strftime("%H:%M"),
-                end_time.strftime("%H:%M"),
+                effective_start.astimezone(HK_TZ).strftime("%Y-%m-%d %H:%M"),
+                end_time.astimezone(HK_TZ).strftime("%H:%M"),
             )
 
         return scheduled

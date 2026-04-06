@@ -8,6 +8,7 @@ Set APP_ENV as an OS environment variable before starting.
 """
 
 import os
+import zoneinfo
 from functools import cached_property
 from urllib.parse import quote_plus
 
@@ -72,6 +73,14 @@ class Settings(BaseSettings):
     # Telegram command listener settings
     TG_COMMANDS_ENABLED: bool = True
     TG_COMMAND_ALLOWED_USERS: str = ""  # Comma-separated Telegram user IDs (empty = allow all)
+
+    # Timezone for display & logging (IANA name, e.g. Asia/Hong_Kong)
+    APP_TIMEZONE: str = "Asia/Hong_Kong"
+
+    @cached_property
+    def tz(self) -> zoneinfo.ZoneInfo:
+        """Resolved ZoneInfo object for APP_TIMEZONE."""
+        return zoneinfo.ZoneInfo(self.APP_TIMEZONE)
 
     # Logging
     LOG_LEVEL: str = "INFO"
