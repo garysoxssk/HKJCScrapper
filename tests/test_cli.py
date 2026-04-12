@@ -903,3 +903,31 @@ class TestCmdListJobs:
         assert "continuous" in out
         assert "CHL" in out
         assert "300s" in out
+
+    def test_list_jobs_sorted_by_trigger_time(self, mock_db, capsys):
+        """Jobs should be sorted by trigger time ascending (earliest first)."""
+        # Insert later job first
+        mock_db.insert_scheduled_job({
+            "dedup_key": "later",
+            "job_type": "event",
+            "match_id": "50002222",
+            "front_end_id": "FB2222",
+            "odds_types": ["HHA"],
+            "trigger_time": datetime(2026, 3, 10, 18, 0, tzinfo=timezone.utc),
+            "created_at": datetime(2026, 3, 10, 10, 0, tzinfo=timezone.utc),
+        })
+        # Insert earlier job second
+        mock_db.insert_scheduled_job({
+            "dedup_key": "earlier",
+            "job_type": "event",
+            "match_id": "50001111",
+            "front_end_id": "FB1111",
+            "odds_types": ["HAD"],
+            "trigger_time": datetime(2026, 3, 10, 12, 0, tzinfo=timezone.utc),
+            "created_at": datetime(2026, 3, 10, 10, 0, tzinfo=timezone.utc),
+        })
+        args = _FakeArgs()
+        cmd_list_jobs(args, mock_db, _FakeSettings())
+        out = capsys.readouterr().out
+        # FB1111 (earlier) should appear before FB2222 (later)
+        assert out.index("FB1111") < out.index("FB2222")

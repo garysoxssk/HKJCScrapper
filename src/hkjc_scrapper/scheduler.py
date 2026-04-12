@@ -305,6 +305,18 @@ class MatchScheduler:
         logger.info("[Discovery] Running discovery cycle...")
 
         try:
+            # 0. Clean up expired scheduled jobs
+            now_cleanup = datetime.now(timezone.utc)
+            expired = self.db.delete_expired_scheduled_jobs(now_cleanup)
+            if expired:
+                logger.info(
+                    "[Discovery] Cleaned up %d expired scheduled jobs", expired
+                )
+                remaining_keys = {
+                    j["dedup_key"] for j in self.db.get_all_scheduled_jobs()
+                }
+                self._scheduled_keys &= remaining_keys
+
             # 1. Refresh tournament data
             self._discover_tournaments()
 

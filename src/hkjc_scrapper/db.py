@@ -10,6 +10,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Optional
 
+import certifi
 from pymongo import MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
@@ -32,7 +33,7 @@ class MongoDBClient:
             uri: MongoDB connection string
             database: Database name
         """
-        self.client = MongoClient(uri)
+        self.client = MongoClient(uri, tlsCAFile=certifi.where())
         self.db: Database = self.client[database]
 
         # Collection references

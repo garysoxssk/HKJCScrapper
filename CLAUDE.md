@@ -322,7 +322,9 @@ Note: `POLL_INTERVAL_SECONDS` and `ODDS_TYPES` are no longer global — they are
 - New CLI command: `list-jobs` — shows persisted scheduled jobs with front-end ID, type, odds, trigger/window (in HKT), created time.
 - New TG command: `/jobs` — shows scheduled jobs in Telegram with same details.
 - Registered in both CLI dispatch and TG `register_handlers()`.
-- **Total unit tests: 253** (was 241, +16 deselected integration/mongodb)
+- Periodic cleanup: expired jobs cleaned up during each discovery cycle (piggyback, no extra job)
+- Jobs sorted by trigger time ascending (earliest first) in both CLI and TG
+- **Total unit tests: 256** (was 241, +16 deselected integration/mongodb)
 
 **Phase 9 (Extended Testing)** - See `docs/project_plan.md` for details.
 
