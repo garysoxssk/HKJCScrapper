@@ -617,6 +617,32 @@ class TestCmdJobs:
         assert "FB4233" in msg
         assert "HAD" in msg
 
+    def test_jobs_sorted_by_trigger_time(self):
+        """Jobs should be sorted by trigger time ascending."""
+        from datetime import timezone as tz
+        handler = _make_handler()
+        handler.db.get_all_scheduled_jobs.return_value = [
+            {
+                "front_end_id": "FB_LATER",
+                "job_type": "event",
+                "odds_types": ["HHA"],
+                "trigger_time": datetime(2026, 4, 7, 18, 0, tzinfo=tz.utc),
+                "created_at": datetime(2026, 4, 6, 10, 0, tzinfo=tz.utc),
+            },
+            {
+                "front_end_id": "FB_EARLIER",
+                "job_type": "event",
+                "odds_types": ["HAD"],
+                "trigger_time": datetime(2026, 4, 7, 12, 0, tzinfo=tz.utc),
+                "created_at": datetime(2026, 4, 6, 10, 0, tzinfo=tz.utc),
+            },
+        ]
+        event = _make_event(text="/jobs")
+        _run(handler._cmd_jobs(event))
+        msg = event.reply.call_args[0][0]
+        # FB_EARLIER should appear before FB_LATER
+        assert msg.index("FB_EARLIER") < msg.index("FB_LATER")
+
 
 # ============================================================================
 # _cb_fetch — odds details in response

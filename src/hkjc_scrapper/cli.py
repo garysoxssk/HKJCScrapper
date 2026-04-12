@@ -241,12 +241,24 @@ def cmd_delete_rule(args, db: MongoDBClient, tg: TGMessageClient | None = None) 
 # Scheduled jobs viewer
 # ============================================================================
 
+def _job_sort_key(job: dict) -> datetime:
+    """Sort key: event by trigger_time, continuous by start_time."""
+    t = job.get("trigger_time") or job.get("start_time")
+    if t is None:
+        return datetime.max.replace(tzinfo=timezone.utc)
+    if t.tzinfo is None:
+        t = t.replace(tzinfo=timezone.utc)
+    return t
+
+
 def cmd_list_jobs(args, db: MongoDBClient, settings: Settings) -> int:
     """Handle list-jobs command: show persisted scheduled fetch jobs."""
     jobs = db.get_all_scheduled_jobs()
     if not jobs:
         print("No scheduled jobs.")
         return 0
+
+    jobs.sort(key=_job_sort_key)
 
     tz = settings.tz
     print(f"Scheduled Jobs ({len(jobs)} jobs):")

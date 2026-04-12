@@ -642,3 +642,45 @@ class TestSchedulerPersistence:
 
         # Job should still be in DB
         assert mock_db.scheduled_jobs.count_documents({}) == 1
+
+    def test_discovery_cleans_expired_jobs(self, mock_db):
+        """Discovery cycle should clean up expired scheduled jobs."""
+        from unittest.mock import patch
+
+        scheduler = self._make_scheduler(mock_db=mock_db)
+
+        # Insert an expired event job
+        mock_db.insert_scheduled_job({
+            "dedup_key": "expired:event",
+            "job_type": "event",
+            "match_id": "50001111",
+            "front_end_id": "FB9999",
+            "odds_types": ["HAD"],
+            "trigger_time": datetime.now(timezone.utc) - timedelta(hours=2),
+            "created_at": datetime.now(timezone.utc),
+        })
+        # Insert a future event job
+        mock_db.insert_scheduled_job({
+            "dedup_key": "future:event",
+            "job_type": "event",
+            "match_id": "50002222",
+            "front_end_id": "FB8888",
+            "odds_types": ["CHL"],
+            "trigger_time": datetime.now(timezone.utc) + timedelta(hours=2),
+            "created_at": datetime.now(timezone.utc),
+        })
+        scheduler._scheduled_keys = {"expired:event", "future:event"}
+
+        # Mock API to return empty matches (discovery finds nothing)
+        scheduler.client.send_basic_match_list_request.return_value = {"data": {"matches": []}}
+        scheduler.client.send_tournament_list_request.return_value = {"data": {"tournamentList": []}}
+        with patch("hkjc_scrapper.scheduler.parse_matches_response", return_value=[]):
+            scheduler.run_discovery()
+
+        # Expired job should be cleaned up
+        assert mock_db.scheduled_jobs.count_documents({}) == 1
+        remaining = mock_db.get_all_scheduled_jobs()
+        assert remaining[0]["dedup_key"] == "future:event"
+        # In-memory keys should be synced
+        assert "expired:event" not in scheduler._scheduled_keys
+        assert "future:event" in scheduler._scheduled_keys

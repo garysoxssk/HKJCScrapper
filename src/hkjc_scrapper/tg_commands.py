@@ -33,6 +33,16 @@ logger = logging.getLogger(__name__)
 TG_MAX_LENGTH = 4000
 
 
+def _job_sort_key(job: dict) -> datetime:
+    """Sort key: event by trigger_time, continuous by start_time."""
+    t = job.get("trigger_time") or job.get("start_time")
+    if t is None:
+        return datetime.max.replace(tzinfo=timezone.utc)
+    if t.tzinfo is None:
+        t = t.replace(tzinfo=timezone.utc)
+    return t
+
+
 def _truncate(text: str, limit: int = TG_MAX_LENGTH) -> str:
     """Truncate text to limit, adding '... (truncated)' if needed."""
     if len(text) <= limit:
@@ -256,6 +266,7 @@ class TGCommandHandler:
         if not jobs:
             await event.reply("No scheduled jobs.")
             return
+        jobs.sort(key=_job_sort_key)
 
         tz = self.settings.tz
         lines = [f"<b>Scheduled Jobs ({len(jobs)})</b>", ""]
