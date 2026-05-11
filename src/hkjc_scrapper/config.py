@@ -76,6 +76,7 @@ class Settings(BaseSettings):
     # Telegram command listener settings
     TG_COMMANDS_ENABLED: bool = True
     TG_COMMAND_ALLOWED_USERS: str = ""  # Comma-separated Telegram user IDs (empty = allow all)
+    TG_PAGE_SIZE: int = 20  # Buttons per page in paginated commands (/matches, /fetch, /odds)
 
     # Timezone for display & logging (IANA name, e.g. Asia/Hong_Kong)
     APP_TIMEZONE: str = "Asia/Hong_Kong"

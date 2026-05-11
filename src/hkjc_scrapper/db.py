@@ -33,7 +33,13 @@ class MongoDBClient:
             uri: MongoDB connection string
             database: Database name
         """
-        self.client = MongoClient(uri, tlsCAFile=certifi.where())
+        # Only attach a CA bundle when the URI actually negotiates TLS.
+        # mongodb+srv:// (Atlas) defaults to tls=true; plain mongodb:// to
+        # a local dev server speaks plaintext and chokes on tlsCAFile.
+        kwargs = {}
+        if uri.startswith("mongodb+srv://") or "tls=true" in uri.lower():
+            kwargs["tlsCAFile"] = certifi.where()
+        self.client = MongoClient(uri, **kwargs)
         self.db: Database = self.client[database]
 
         # Collection references

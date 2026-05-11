@@ -9,12 +9,23 @@ import pytest
 
 from hkjc_scrapper.models import (
     Match,
+    MatchFilter,
     Observation,
     Schedule,
     ScheduleTrigger,
     Team,
     Tournament,
+    WatchRule,
 )
+
+
+def _make_rule(name: str = "Test Rule") -> WatchRule:
+    return WatchRule(
+        name=name,
+        enabled=True,
+        match_filter=MatchFilter(),
+        observations=[],
+    )
 
 # Fixed kickoff for tests: 2026-03-10 20:00 HK time
 HK_TZ = timezone(timedelta(hours=8))
@@ -312,7 +323,7 @@ class TestSchedulerPersistence:
             ),
         )
         now = KICKOFF - timedelta(hours=2)
-        count = scheduler._schedule_observation(match, obs, now)
+        count = scheduler._schedule_observation(match, obs, now, _make_rule("Persist Test"))
 
         assert count == 1
         # Verify persisted to DB
@@ -322,6 +333,10 @@ class TestSchedulerPersistence:
         assert jobs[0]["match_id"] == "50001111"
         assert jobs[0]["odds_types"] == ["HAD"]
         assert jobs[0]["trigger_time"] is not None
+        # Enhancement 2: rule name + team names are persisted at insert time
+        assert jobs[0]["rule_name"] == "Persist Test"
+        assert jobs[0]["home_team"] == "Team A"
+        assert jobs[0]["away_team"] == "Team B"
 
     def test_schedule_observation_persists_continuous_job(self, mock_db):
         scheduler = self._make_scheduler(mock_db=mock_db)
@@ -336,7 +351,7 @@ class TestSchedulerPersistence:
             ),
         )
         now = KICKOFF - timedelta(hours=1)
-        count = scheduler._schedule_observation(match, obs, now)
+        count = scheduler._schedule_observation(match, obs, now, _make_rule("Persist Test"))
 
         assert count == 1
         jobs = mock_db.get_all_scheduled_jobs()
@@ -344,6 +359,10 @@ class TestSchedulerPersistence:
         assert jobs[0]["job_type"] == "continuous"
         assert jobs[0]["interval_seconds"] == 300
         assert jobs[0]["end_time"] is not None
+        # Enhancement 2: rule name + team names are persisted at insert time
+        assert jobs[0]["rule_name"] == "Persist Test"
+        assert jobs[0]["home_team"] == "Team A"
+        assert jobs[0]["away_team"] == "Team B"
 
     def test_execute_fetch_deletes_event_job_from_db(self, mock_db):
         from unittest.mock import patch

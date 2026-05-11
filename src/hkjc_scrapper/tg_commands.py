@@ -33,6 +33,75 @@ logger = logging.getLogger(__name__)
 TG_MAX_LENGTH = 4000
 
 
+# ============================================================================
+# Pagination helpers (used by /matches, /fetch, /odds)
+# ============================================================================
+
+# Max characters in a button label that still allows packing 2 per row.
+_TWO_COL_LABEL_THRESHOLD = 18
+
+
+def _paginate(items: list, page: int, page_size: int) -> tuple[list, int, int]:
+    """Return (slice, total_pages, resolved_page).
+
+    `page` is 1-indexed and clamped to [1, total_pages]. An empty list yields
+    total_pages=1 and an empty slice — callers should detect the empty case
+    before calling.
+    """
+    page_size = max(1, page_size)
+    n = len(items)
+    if n == 0:
+        return [], 1, 1
+    total_pages = (n + page_size - 1) // page_size
+    page = max(1, min(page, total_pages))
+    start = (page - 1) * page_size
+    return items[start:start + page_size], total_pages, page
+
+
+def _build_button_grid(
+    buttons: list,
+    max_label_len_for_two_col: int = _TWO_COL_LABEL_THRESHOLD,
+) -> list[list]:
+    """Lay buttons out in 2 columns when every label is short enough, else 1.
+
+    `buttons` is a list of Telethon Button objects (must have a `.text` attr).
+    """
+    if not buttons:
+        return []
+    use_two_col = all(
+        len(getattr(b, "text", "")) <= max_label_len_for_two_col for b in buttons
+    )
+    if not use_two_col:
+        return [[b] for b in buttons]
+    rows: list[list] = []
+    for i in range(0, len(buttons), 2):
+        rows.append(buttons[i:i + 2])
+    return rows
+
+
+def _nav_row(
+    page: int,
+    total_pages: int,
+    prev_data: bytes,
+    next_data: bytes,
+) -> list | None:
+    """Build a [Prev | X/Y | Next] row. Returns None if total_pages == 1.
+
+    The middle X/Y button is a no-op (`nop` callback). Prev/Next become no-ops
+    at the boundaries so the row always renders three buttons in a stable
+    layout.
+    """
+    if total_pages <= 1:
+        return None
+    prev_cb = prev_data if page > 1 else b"nop"
+    next_cb = next_data if page < total_pages else b"nop"
+    return [
+        Button.inline("◀ Prev", data=prev_cb),
+        Button.inline(f"{page} / {total_pages}", data=b"nop"),
+        Button.inline("Next ▶", data=next_cb),
+    ]
+
+
 def _job_sort_key(job: dict) -> datetime:
     """Sort key: event by trigger_time, continuous by start_time."""
     t = job.get("trigger_time") or job.get("start_time")
@@ -41,6 +110,63 @@ def _job_sort_key(job: dict) -> datetime:
     if t.tzinfo is None:
         t = t.replace(tzinfo=timezone.utc)
     return t
+
+
+def _group_jobs_by_rule(jobs: list[dict]) -> dict[str, list[dict]]:
+    """Group jobs by their rule_name. Legacy docs without rule_name fall under
+    the '(legacy)' bucket.
+    """
+    groups: dict[str, list[dict]] = {}
+    for j in jobs:
+        key = j.get("rule_name") or "(legacy)"
+        groups.setdefault(key, []).append(j)
+    return groups
+
+
+def _format_job_line(job: dict, tz) -> tuple[str, str]:
+    """Return (headline, window) for a scheduled job document.
+
+    Headline: 'Home vs Away (FB####) — HAD,HHA (event)' or '... (continuous)'.
+    Window: human-readable time/interval string in the configured timezone.
+    Falls back to '?' for missing team names.
+    """
+    feid = job.get("front_end_id", "?")
+    odds = ", ".join(job.get("odds_types", []))
+    jtype = job.get("job_type", "?")
+    home = job.get("home_team") or "?"
+    away = job.get("away_team") or "?"
+
+    if jtype == "event":
+        tt = job.get("trigger_time")
+        if tt:
+            if tt.tzinfo is None:
+                tt = tt.replace(tzinfo=timezone.utc)
+            window = tt.astimezone(tz).strftime("%Y-%m-%d %H:%M HKT")
+        else:
+            window = "?"
+    elif jtype == "continuous":
+        interval = job.get("interval_seconds", "?")
+        st = job.get("start_time")
+        et = job.get("end_time")
+        if st and et:
+            if st.tzinfo is None:
+                st = st.replace(tzinfo=timezone.utc)
+            if et.tzinfo is None:
+                et = et.replace(tzinfo=timezone.utc)
+            st_hk = st.astimezone(tz)
+            et_hk = et.astimezone(tz)
+            window = (
+                f"every {interval}s, "
+                f"{st_hk.strftime('%H:%M')}–{et_hk.strftime('%H:%M')} "
+                f"{st_hk.strftime('%b %d')} HKT"
+            )
+        else:
+            window = f"every {interval}s"
+    else:
+        window = "?"
+
+    headline = f"{home} vs {away} (<b>{feid}</b>) — {odds} ({jtype})"
+    return headline, window
 
 
 def _truncate(text: str, limit: int = TG_MAX_LENGTH) -> str:
@@ -203,6 +329,7 @@ class TGCommandHandler:
         self.client.on(events.CallbackQuery(pattern=b"^r:"))(self._cb_rules)
         self.client.on(events.CallbackQuery(pattern=b"^ar:"))(self._cb_addrule)
         self.client.on(events.CallbackQuery(pattern=b"^cancel$"))(self._cb_cancel)
+        self.client.on(events.CallbackQuery(pattern=b"^nop$"))(self._cb_nop)
 
     # ========================================================================
     # Auth helper
@@ -257,8 +384,40 @@ class TGCommandHandler:
         )
         await event.reply(text, parse_mode="html")
 
+    def _enrich_jobs_with_teams(self, jobs: list[dict]) -> None:
+        """Backfill home_team/away_team in place for any legacy job docs.
+
+        Bulk-queries matches_current for the missing front-end IDs to avoid
+        N round-trips. Legacy docs without a matching match row keep '?'.
+        """
+        missing_feids = [
+            j["front_end_id"]
+            for j in jobs
+            if (not j.get("home_team") or not j.get("away_team"))
+            and j.get("front_end_id")
+        ]
+        if not missing_feids:
+            return
+        cursor = self.db.matches_current.find(
+            {"frontEndId": {"$in": list(set(missing_feids))}},
+            {"frontEndId": 1, "homeTeam": 1, "awayTeam": 1},
+        )
+        lookup: dict[str, dict] = {}
+        for doc in cursor:
+            feid = doc.get("frontEndId")
+            if feid:
+                lookup[feid] = doc
+        for j in jobs:
+            feid = j.get("front_end_id")
+            if feid in lookup:
+                doc = lookup[feid]
+                if not j.get("home_team"):
+                    j["home_team"] = doc.get("homeTeam", {}).get("name_en")
+                if not j.get("away_team"):
+                    j["away_team"] = doc.get("awayTeam", {}).get("name_en")
+
     async def _cmd_jobs(self, event) -> None:
-        """Handle /jobs command — show persisted scheduled fetch jobs."""
+        """Handle /jobs command — grouped scheduled fetch jobs with team names."""
         if not await self._check_auth(event):
             return
         loop = asyncio.get_event_loop()
@@ -266,82 +425,105 @@ class TGCommandHandler:
         if not jobs:
             await event.reply("No scheduled jobs.")
             return
-        jobs.sort(key=_job_sort_key)
+
+        await loop.run_in_executor(None, self._enrich_jobs_with_teams, jobs)
 
         tz = self.settings.tz
-        lines = [f"<b>Scheduled Jobs ({len(jobs)})</b>", ""]
-        for i, j in enumerate(jobs, 1):
-            feid = j.get("front_end_id", "?")
-            odds = ", ".join(j.get("odds_types", []))
-            jtype = j.get("job_type", "?")
+        groups = _group_jobs_by_rule(jobs)
+        lines = [
+            f"<b>Scheduled Jobs ({len(jobs)} total, "
+            f"{len(groups)} rule(s))</b>",
+            "",
+        ]
+        for rule_name in sorted(groups.keys(), key=str.lower):
+            rule_jobs = sorted(groups[rule_name], key=_job_sort_key)
+            lines.append(f"— <b>{rule_name}</b> ({len(rule_jobs)} job(s))")
+            for i, j in enumerate(rule_jobs, 1):
+                headline, window = _format_job_line(j, tz)
+                lines.append(f"  {i}. {headline}")
+                lines.append(f"     {window}")
+            lines.append("")
 
-            if jtype == "event":
-                tt = j.get("trigger_time")
-                if tt:
-                    if tt.tzinfo is None:
-                        tt = tt.replace(tzinfo=timezone.utc)
-                    window = tt.astimezone(tz).strftime("%Y-%m-%d %H:%M HKT")
-                else:
-                    window = "?"
-            elif jtype == "continuous":
-                interval = j.get("interval_seconds", "?")
-                st = j.get("start_time")
-                et = j.get("end_time")
-                if st and et:
-                    if st.tzinfo is None:
-                        st = st.replace(tzinfo=timezone.utc)
-                    if et.tzinfo is None:
-                        et = et.replace(tzinfo=timezone.utc)
-                    st_hk = st.astimezone(tz)
-                    et_hk = et.astimezone(tz)
-                    window = (
-                        f"every {interval}s, "
-                        f"{st_hk.strftime('%H:%M')}–{et_hk.strftime('%H:%M')} "
-                        f"{st_hk.strftime('%b %d')} HKT"
-                    )
-                else:
-                    window = f"every {interval}s"
-            else:
-                window = "?"
-
-            lines.append(f"{i}. <b>{feid}</b> — {odds} ({jtype})")
-            lines.append(f"   {window}")
-
-        text = "\n".join(lines)
+        text = "\n".join(lines).rstrip()
         await event.reply(_truncate(text), parse_mode="html")
 
-    async def _cmd_matches(self, event) -> None:
-        """Handle /matches command — show tournament selection buttons."""
-        if not await self._check_auth(event):
-            return
-        loop = asyncio.get_event_loop()
-        try:
-            raw = await loop.run_in_executor(None, self.api.send_basic_match_list_request)
-        except Exception as e:
-            await event.reply(f"Error fetching matches: {e}")
-            return
+    # ------------------------------------------------------------------------
+    # /matches — paginated tournament browse with full English names
+    # ------------------------------------------------------------------------
 
-        from hkjc_scrapper.parser import parse_matches_response
-        matches = parse_matches_response(raw)
-        if not matches:
-            await event.reply("No matches found.")
-            return
+    @staticmethod
+    def _group_matches_by_tournament(matches) -> list[tuple[str, str, int]]:
+        """Return [(code, name_en, count)] sorted by name_en (fallback to code).
 
-        # Group by tournament
-        tournaments: dict[str, int] = {}
+        Picks the first non-empty `name_en` encountered for each code, since the
+        same tournament code can appear with different name strings across
+        seasons (see CLAUDE.md). The Telegram button label uses name_en when
+        present, else falls back to the code.
+        """
+        groups: dict[str, dict] = {}
         for m in matches:
             code = m.tournament.code
-            tournaments[code] = tournaments.get(code, 0) + 1
+            entry = groups.setdefault(code, {"count": 0, "name_en": ""})
+            entry["count"] += 1
+            if not entry["name_en"] and m.tournament.name_en:
+                entry["name_en"] = m.tournament.name_en
 
-        buttons = [
-            [Button.inline(f"{code} ({count})", data=f"m:{code}".encode())]
-            for code, count in sorted(tournaments.items())
+        def sort_key(item):
+            code, e = item
+            return (e["name_en"] or code).lower()
+
+        return [
+            (code, e["name_en"], e["count"])
+            for code, e in sorted(groups.items(), key=sort_key)
         ]
-        buttons.append([Button.inline("Cancel", data=b"cancel")])
-        await event.reply("Select a tournament:", buttons=buttons)
 
-    async def _cmd_fetch(self, event) -> None:
-        """Handle /fetch command — show match selection buttons."""
+    def _build_tournament_page(
+        self, tournaments: list[tuple[str, str, int]], page: int
+    ) -> tuple[str, list[list]]:
+        """Render one page of tournament-selection buttons."""
+        page_size = self.settings.TG_PAGE_SIZE
+        slice_, total_pages, page = _paginate(tournaments, page, page_size)
+        buttons = [
+            Button.inline(
+                f"{(name_en or code)} ({count})",
+                data=f"m:t:{code}".encode(),
+            )
+            for code, name_en, count in slice_
+        ]
+        rows = _build_button_grid(buttons)
+        nav = _nav_row(page, total_pages, f"m:tp:{page - 1}".encode(), f"m:tp:{page + 1}".encode())
+        if nav:
+            rows.append(nav)
+        rows.append([Button.inline("Cancel", data=b"cancel")])
+        text = f"Select a tournament (page {page}/{total_pages}):"
+        return text, rows
+
+    def _build_tournament_match_page(
+        self, matches: list, code: str, page: int
+    ) -> tuple[str, list[list]]:
+        """Render one page of match-selection buttons filtered to a tournament."""
+        page_size = self.settings.TG_PAGE_SIZE
+        slice_, total_pages, page = _paginate(matches, page, page_size)
+        buttons = []
+        for m in slice_:
+            label = f"{m.homeTeam.name_en[:12]} vs {m.awayTeam.name_en[:12]}"
+            data = f"m:{m.frontEndId}".encode()
+            if len(data) <= 64:
+                buttons.append(Button.inline(label, data=data))
+        rows = _build_button_grid(buttons)
+        nav = _nav_row(
+            page, total_pages,
+            f"m:t:{code}:p:{page - 1}".encode(),
+            f"m:t:{code}:p:{page + 1}".encode(),
+        )
+        if nav:
+            rows.append(nav)
+        rows.append([Button.inline("Back", data=b"cancel")])
+        text = f"Matches in {code} (page {page}/{total_pages}):"
+        return text, rows
+
+    async def _cmd_matches(self, event) -> None:
+        """Handle /matches command — paginated tournament selection."""
         if not await self._check_auth(event):
             return
         loop = asyncio.get_event_loop()
@@ -357,39 +539,86 @@ class TGCommandHandler:
             await event.reply("No matches found.")
             return
 
+        tournaments = self._group_matches_by_tournament(matches)
+        text, rows = self._build_tournament_page(tournaments, page=1)
+        await event.reply(text, buttons=rows)
+
+    # ------------------------------------------------------------------------
+    # /fetch — paginated match list
+    # ------------------------------------------------------------------------
+
+    def _build_match_select_page(
+        self, matches: list, page: int, prefix: str
+    ) -> tuple[str, list[list]]:
+        """Render one page of match-selection buttons for /fetch or /odds.
+
+        prefix: 'f' for /fetch, 'o' for /odds. Callback data is `{prefix}:FB####`
+        for a match pick and `{prefix}:p:N` for paging.
+        """
+        page_size = self.settings.TG_PAGE_SIZE
+        slice_, total_pages, page = _paginate(matches, page, page_size)
         buttons = []
-        for m in matches[:15]:  # limit to avoid too many buttons
-            label = f"{m.homeTeam.name_en[:10]} vs {m.awayTeam.name_en[:10]}"
-            data = f"f:{m.frontEndId}".encode()
+        for m in slice_:
+            if isinstance(m, dict):
+                feid = m.get("frontEndId", "?")
+                home = m.get("homeTeam", {}).get("name_en", "?")
+                away = m.get("awayTeam", {}).get("name_en", "?")
+            else:
+                feid = m.frontEndId
+                home = m.homeTeam.name_en
+                away = m.awayTeam.name_en
+            label = f"{home[:12]} vs {away[:12]}"
+            data = f"{prefix}:{feid}".encode()
             if len(data) <= 64:
-                buttons.append([Button.inline(label, data=data)])
-        buttons.append([Button.inline("Cancel", data=b"cancel")])
-        await event.reply("Select a match to fetch:", buttons=buttons)
+                buttons.append(Button.inline(label, data=data))
+        rows = _build_button_grid(buttons)
+        nav = _nav_row(
+            page, total_pages,
+            f"{prefix}:p:{page - 1}".encode(),
+            f"{prefix}:p:{page + 1}".encode(),
+        )
+        if nav:
+            rows.append(nav)
+        rows.append([Button.inline("Cancel", data=b"cancel")])
+        label = "Select a match to fetch" if prefix == "f" else "Select a match"
+        text = f"{label} (page {page}/{total_pages}):"
+        return text, rows
+
+    async def _cmd_fetch(self, event) -> None:
+        """Handle /fetch command — paginated match selection."""
+        if not await self._check_auth(event):
+            return
+        loop = asyncio.get_event_loop()
+        try:
+            raw = await loop.run_in_executor(None, self.api.send_basic_match_list_request)
+        except Exception as e:
+            await event.reply(f"Error fetching matches: {e}")
+            return
+
+        from hkjc_scrapper.parser import parse_matches_response
+        matches = parse_matches_response(raw)
+        if not matches:
+            await event.reply("No matches found.")
+            return
+
+        text, rows = self._build_match_select_page(matches, page=1, prefix="f")
+        await event.reply(text, buttons=rows)
 
     async def _cmd_odds(self, event) -> None:
-        """Handle /odds command — show stored matches as buttons."""
+        """Handle /odds command — paginated stored-match selection."""
         if not await self._check_auth(event):
             return
         loop = asyncio.get_event_loop()
         matches = await loop.run_in_executor(None, lambda: list(
             self.db.matches_current.find({}, {"_id": 1, "frontEndId": 1,
-                                             "homeTeam": 1, "awayTeam": 1}).limit(15)
+                                             "homeTeam": 1, "awayTeam": 1})
         ))
         if not matches:
             await event.reply("No matches in database.")
             return
 
-        buttons = []
-        for m in matches:
-            feid = m.get("frontEndId", "?")
-            home = m.get("homeTeam", {}).get("name_en", "?")[:10]
-            away = m.get("awayTeam", {}).get("name_en", "?")[:10]
-            label = f"{home} vs {away}"
-            data = f"o:{feid}".encode()
-            if len(data) <= 64:
-                buttons.append([Button.inline(label, data=data)])
-        buttons.append([Button.inline("Cancel", data=b"cancel")])
-        await event.reply("Select a match:", buttons=buttons)
+        text, rows = self._build_match_select_page(matches, page=1, prefix="o")
+        await event.reply(text, buttons=rows)
 
     async def _cmd_rules(self, event) -> None:
         """Handle /rules command — list rules with inline buttons."""
@@ -485,17 +714,68 @@ class TGCommandHandler:
     # ========================================================================
 
     async def _cb_matches(self, event) -> None:
-        """Handle m: callbacks — tournament selection or match detail."""
+        """Handle m: callbacks — tournament/match list pagination or match detail.
+
+        Recognised forms:
+            m:tp:<page>          — tournament list page (Enhancement 1)
+            m:t:<CODE>           — first page of matches in tournament CODE
+            m:t:<CODE>:p:<page>  — paged matches in tournament CODE
+            m:<FB####>           — match detail (unchanged)
+        """
         if not await self._check_auth(event):
             return
         data = event.data.decode()
-        parts = data.split(":", 1)
-        value = parts[1] if len(parts) > 1 else ""
-
+        parts = data.split(":")
         await event.answer()
 
+        # m:tp:<page> — paginate the tournament list
+        if len(parts) >= 3 and parts[1] == "tp":
+            try:
+                page = int(parts[2])
+            except ValueError:
+                page = 1
+            loop = asyncio.get_event_loop()
+            try:
+                raw = await loop.run_in_executor(None, self.api.send_basic_match_list_request)
+                from hkjc_scrapper.parser import parse_matches_response
+                matches = parse_matches_response(raw)
+                if not matches:
+                    await event.edit("No matches found.")
+                    return
+                tournaments = self._group_matches_by_tournament(matches)
+                text, rows = self._build_tournament_page(tournaments, page=page)
+                await event.edit(text, buttons=rows)
+            except Exception as e:
+                await event.edit(f"Error: {e}")
+            return
+
+        # m:t:<CODE>[:p:<page>] — show matches in a tournament
+        if len(parts) >= 3 and parts[1] == "t":
+            code = parts[2]
+            page = 1
+            if len(parts) >= 5 and parts[3] == "p":
+                try:
+                    page = int(parts[4])
+                except ValueError:
+                    page = 1
+            loop = asyncio.get_event_loop()
+            try:
+                raw = await loop.run_in_executor(None, self.api.send_basic_match_list_request)
+                from hkjc_scrapper.parser import parse_matches_response
+                matches = parse_matches_response(raw)
+                tourn_matches = [m for m in matches if m.tournament.code == code]
+                if not tourn_matches:
+                    await event.edit(f"No matches found for {code}.")
+                    return
+                text, rows = self._build_tournament_match_page(tourn_matches, code, page)
+                await event.edit(text, buttons=rows)
+            except Exception as e:
+                await event.edit(f"Error: {e}")
+            return
+
+        # m:<FB####> — match detail
+        value = parts[1] if len(parts) > 1 else ""
         if value.startswith("FB"):
-            # Match detail
             loop = asyncio.get_event_loop()
             try:
                 raw = await loop.run_in_executor(None, self.api.send_basic_match_list_request)
@@ -515,34 +795,40 @@ class TGCommandHandler:
                     await event.edit(f"Match {value} not found.")
             except Exception as e:
                 await event.edit(f"Error: {e}")
-        else:
-            # Tournament filter — show matches in that tournament
+
+    async def _cb_fetch(self, event) -> None:
+        """Handle f: callbacks — match list paging, odds type selection, fetch.
+
+        Recognised forms:
+            f:p:<page>      — paginated match list
+            f:<FB####>      — odds type selection
+            f:<FB####>:<OT> — execute fetch
+        """
+        if not await self._check_auth(event):
+            return
+        data = event.data.decode()
+        await event.answer()
+
+        # f:p:<page> — paginate the match list
+        head = data.split(":", 2)
+        if len(head) >= 3 and head[1] == "p":
+            try:
+                page = int(head[2])
+            except ValueError:
+                page = 1
             loop = asyncio.get_event_loop()
             try:
                 raw = await loop.run_in_executor(None, self.api.send_basic_match_list_request)
                 from hkjc_scrapper.parser import parse_matches_response
                 matches = parse_matches_response(raw)
-                tourn_matches = [m for m in matches if m.tournament.code == value]
-                if not tourn_matches:
-                    await event.edit(f"No matches found for {value}.")
+                if not matches:
+                    await event.edit("No matches found.")
                     return
-                buttons = []
-                for m in tourn_matches[:10]:
-                    label = f"{m.homeTeam.name_en[:12]} vs {m.awayTeam.name_en[:12]}"
-                    data = f"m:{m.frontEndId}".encode()
-                    if len(data) <= 64:
-                        buttons.append([Button.inline(label, data=data)])
-                buttons.append([Button.inline("Back", data=b"cancel")])
-                await event.edit(f"Matches in {value}:", buttons=buttons)
+                text, rows = self._build_match_select_page(matches, page=page, prefix="f")
+                await event.edit(text, buttons=rows)
             except Exception as e:
                 await event.edit(f"Error: {e}")
-
-    async def _cb_fetch(self, event) -> None:
-        """Handle f: callbacks — match selection then odds type selection then fetch."""
-        if not await self._check_auth(event):
             return
-        data = event.data.decode()
-        await event.answer()
 
         parts = data.split(":", 2)
         if len(parts) == 2:
@@ -602,11 +888,40 @@ class TGCommandHandler:
                 await event.edit(f"Error fetching {front_end_id}: {e}")
 
     async def _cb_odds(self, event) -> None:
-        """Handle o: callbacks — match then odds type selection then show latest odds."""
+        """Handle o: callbacks — match list paging, odds type selection, show odds.
+
+        Recognised forms:
+            o:p:<page>      — paginated match list
+            o:<FB####>      — odds type selection
+            o:<FB####>:<OT> — show stored odds
+        """
         if not await self._check_auth(event):
             return
         data = event.data.decode()
         await event.answer()
+
+        # o:p:<page> — paginate the stored-match list
+        head = data.split(":", 2)
+        if len(head) >= 3 and head[1] == "p":
+            try:
+                page = int(head[2])
+            except ValueError:
+                page = 1
+            loop = asyncio.get_event_loop()
+            try:
+                matches = await loop.run_in_executor(None, lambda: list(
+                    self.db.matches_current.find(
+                        {}, {"_id": 1, "frontEndId": 1, "homeTeam": 1, "awayTeam": 1}
+                    )
+                ))
+                if not matches:
+                    await event.edit("No matches in database.")
+                    return
+                text, rows = self._build_match_select_page(matches, page=page, prefix="o")
+                await event.edit(text, buttons=rows)
+            except Exception as e:
+                await event.edit(f"Error: {e}")
+            return
 
         parts = data.split(":", 2)
         if len(parts) == 2:
@@ -824,6 +1139,10 @@ class TGCommandHandler:
         self._addrule_wizards.pop(user_id, None)
         await event.answer()
         await event.edit("Cancelled.")
+
+    async def _cb_nop(self, event) -> None:
+        """No-op callback — used for the page indicator and clamped nav buttons."""
+        await event.answer()
 
     # ========================================================================
     # Wizard helpers

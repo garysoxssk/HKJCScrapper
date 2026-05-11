@@ -494,7 +494,7 @@ class MatchScheduler:
                 for match in matched:
                     for obs in rule.observations:
                         jobs_scheduled += self._schedule_observation(
-                            match, obs, now
+                            match, obs, now, rule
                         )
                 jobs_for_rule = jobs_scheduled - jobs_before
 
@@ -547,7 +547,7 @@ class MatchScheduler:
     # ========================================================================
 
     def _schedule_observation(
-        self, match: Match, obs: Observation, now: datetime
+        self, match: Match, obs: Observation, now: datetime, rule: WatchRule
     ) -> int:
         """Schedule fetch jobs for a (match, observation) pair.
 
@@ -614,6 +614,9 @@ class MatchScheduler:
                     "odds_types": obs.odds_types,
                     "trigger_time": trigger_time,
                     "created_at": datetime.now(timezone.utc),
+                    "rule_name": rule.name,
+                    "home_team": match.homeTeam.name_en,
+                    "away_team": match.awayTeam.name_en,
                 })
                 scheduled += 1
 
@@ -686,6 +689,9 @@ class MatchScheduler:
                 "start_time": start_time,
                 "end_time": end_time,
                 "created_at": datetime.now(timezone.utc),
+                "rule_name": rule.name,
+                "home_team": match.homeTeam.name_en,
+                "away_team": match.awayTeam.name_en,
             })
             scheduled += 1
 

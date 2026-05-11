@@ -137,6 +137,16 @@ def _make_match(
     )
 
 
+def _make_rule(name: str = "Test Rule") -> WatchRule:
+    """Minimal WatchRule for scheduler tests that need the rule arg."""
+    return WatchRule(
+        name=name,
+        enabled=True,
+        match_filter=MatchFilter(),
+        observations=[],
+    )
+
+
 class TestSchedulerScheduleLogic:
     """Tests for the scheduling logic via MatchScheduler._schedule_observation."""
 
@@ -169,7 +179,7 @@ class TestSchedulerScheduleLogic:
 
         # "now" is well before kickoff - 30min
         now = KICKOFF - timedelta(hours=2)
-        count = scheduler._schedule_observation(match, obs, now)
+        count = scheduler._schedule_observation(match, obs, now, _make_rule())
 
         assert count == 1
         scheduler._scheduler.add_job.assert_called_once()
@@ -188,7 +198,7 @@ class TestSchedulerScheduleLogic:
 
         # "now" is after kickoff already
         now = KICKOFF + timedelta(hours=1)
-        count = scheduler._schedule_observation(match, obs, now)
+        count = scheduler._schedule_observation(match, obs, now, _make_rule())
 
         assert count == 0
         scheduler._scheduler.add_job.assert_not_called()
@@ -206,8 +216,8 @@ class TestSchedulerScheduleLogic:
         )
 
         now = KICKOFF - timedelta(hours=1)
-        count1 = scheduler._schedule_observation(match, obs, now)
-        count2 = scheduler._schedule_observation(match, obs, now)
+        count1 = scheduler._schedule_observation(match, obs, now, _make_rule())
+        count2 = scheduler._schedule_observation(match, obs, now, _make_rule())
 
         assert count1 == 1
         assert count2 == 0  # Deduplicated
@@ -228,7 +238,7 @@ class TestSchedulerScheduleLogic:
 
         # "now" is before kickoff
         now = KICKOFF - timedelta(hours=1)
-        count = scheduler._schedule_observation(match, obs, now)
+        count = scheduler._schedule_observation(match, obs, now, _make_rule())
 
         assert count == 1
         scheduler._scheduler.add_job.assert_called_once()
@@ -249,7 +259,7 @@ class TestSchedulerScheduleLogic:
 
         # "now" is well after fulltime
         now = KICKOFF + timedelta(hours=3)
-        count = scheduler._schedule_observation(match, obs, now)
+        count = scheduler._schedule_observation(match, obs, now, _make_rule())
 
         assert count == 0
 
@@ -270,7 +280,7 @@ class TestSchedulerScheduleLogic:
         )
 
         now = KICKOFF - timedelta(hours=2)
-        count = scheduler._schedule_observation(match, obs, now)
+        count = scheduler._schedule_observation(match, obs, now, _make_rule())
 
         assert count == 3
 
