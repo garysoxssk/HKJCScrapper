@@ -284,11 +284,14 @@ class TestSchedulerErrorNotifications:
 
     def _make_scheduler(self, tg=None):
         from unittest.mock import MagicMock
+        from hkjc_scrapper.config import Settings
         from hkjc_scrapper.scheduler import MatchScheduler
         scheduler = MatchScheduler.__new__(MatchScheduler)
         scheduler.client = MagicMock()
         scheduler.db = MagicMock()
-        scheduler.settings = MagicMock()
+        # Use a real Settings instance so retry-budget math works; only
+        # override the toggles we care about.
+        scheduler.settings = Settings()
         scheduler.settings.TG_DISCOVERY_INCLUDE_RULES = False
         scheduler._scheduler = MagicMock()
         scheduler._shutdown_event = MagicMock()
@@ -337,3 +340,109 @@ class TestSchedulerErrorNotifications:
         scheduler.client.send_basic_match_list_request.side_effect = ConnectionError("boom")
         # Should not raise
         scheduler.run_discovery()
+
+
+# ============================================================================
+# Retry budget + call_with_retry
+# ============================================================================
+
+class TestRetryBudget:
+    """compute_retry_budget rules described in scheduler.compute_retry_budget."""
+
+    def test_continuous_60s_with_30s_timeout_allows_one_retry(self):
+        from hkjc_scrapper.scheduler import compute_retry_budget
+        # budget = 60-5 = 55; cost = 30+1 = 31; 55 // 31 = 1; capped at 3 -> 1
+        assert compute_retry_budget(60, 30, 1.0, 3) == 1
+
+    def test_continuous_long_interval_hits_cap(self):
+        from hkjc_scrapper.scheduler import compute_retry_budget
+        # budget = 300-5 = 295; 295 // 31 ~= 9; capped at 3 -> 3
+        assert compute_retry_budget(300, 30, 1.0, 3) == 3
+
+    def test_continuous_short_interval_yields_zero_retries(self):
+        from hkjc_scrapper.scheduler import compute_retry_budget
+        # budget = 20-5 = 15; 15 // 31 = 0
+        assert compute_retry_budget(20, 30, 1.0, 3) == 0
+
+    def test_event_mode_uses_fixed_budget(self):
+        from hkjc_scrapper.scheduler import compute_retry_budget
+        # event budget default 120; 120 // 31 ~= 3; capped at 3 -> 3
+        assert compute_retry_budget(None, 30, 1.0, 3) == 3
+
+    def test_event_mode_capped_at_max_retries(self):
+        from hkjc_scrapper.scheduler import compute_retry_budget
+        # huge event budget, low cap
+        assert compute_retry_budget(None, 1, 0.0, 2, event_budget_seconds=10_000) == 2
+
+
+class TestCallWithRetry:
+    """call_with_retry should retry transient errors only."""
+
+    def _settings(self, timeout=30, backoff=0.0, cap=3):
+        from hkjc_scrapper.config import Settings
+        s = Settings()
+        s.HKJC_REQUEST_TIMEOUT_SECONDS = timeout
+        s.HKJC_RETRY_BACKOFF_SECONDS = backoff
+        s.HKJC_MAX_RETRIES = cap
+        return s
+
+    def test_retries_on_timeout_then_succeeds(self):
+        import requests
+        from hkjc_scrapper.scheduler import call_with_retry
+        calls = {"n": 0}
+
+        def fn():
+            calls["n"] += 1
+            if calls["n"] < 2:
+                raise requests.Timeout("slow")
+            return "ok"
+
+        result = call_with_retry(
+            fn, "test", self._settings(), interval_seconds=300
+        )
+        assert result == "ok"
+        assert calls["n"] == 2
+
+    def test_raises_after_exhausting_retries(self):
+        import requests
+        from hkjc_scrapper.scheduler import call_with_retry
+
+        def fn():
+            raise requests.Timeout("always slow")
+
+        with pytest.raises(requests.Timeout):
+            call_with_retry(
+                fn, "test", self._settings(cap=1), interval_seconds=300
+            )
+
+    def test_does_not_retry_validation_error(self):
+        from pydantic import ValidationError as VErr
+        from hkjc_scrapper.scheduler import call_with_retry
+        from hkjc_scrapper.models import Match
+        calls = {"n": 0}
+
+        def fn():
+            calls["n"] += 1
+            # Raise a real ValidationError
+            Match(id="x")  # missing required fields -> ValidationError
+
+        with pytest.raises(VErr):
+            call_with_retry(
+                fn, "test", self._settings(), interval_seconds=300
+            )
+        assert calls["n"] == 1  # no retry
+
+    def test_does_not_retry_http_error(self):
+        import requests
+        from hkjc_scrapper.scheduler import call_with_retry
+        calls = {"n": 0}
+
+        def fn():
+            calls["n"] += 1
+            raise requests.HTTPError("500 server error")
+
+        with pytest.raises(requests.HTTPError):
+            call_with_retry(
+                fn, "test", self._settings(), interval_seconds=300
+            )
+        assert calls["n"] == 1  # no retry

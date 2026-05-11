@@ -414,18 +414,41 @@ class TGMessageClient:
         """Send a custom plain-text message."""
         self.send_sync(message)
 
-    def notify_error(self, context: str, error: Exception) -> None:
+    def notify_error(
+        self,
+        context: str,
+        error: Exception,
+        details: str | None = None,
+    ) -> None:
         """Notify about an error during a scheduled operation.
 
         Args:
             context: Short description of what was running (e.g., "Discovery cycle")
             error: The exception that was raised
+            details: Optional extra root-cause details (e.g., formatted
+                pydantic ValidationError field list). Caller is responsible
+                for formatting — this method just appends and HTML-escapes.
         """
+        error_type = type(error).__name__
         error_str = str(error)
-        if len(error_str) > 200:
-            error_str = error_str[:200] + "..."
+        if len(error_str) > 1000:
+            error_str = error_str[:1000] + "..."
         msg = (
-            f"<b>⚠️ Error</b>: {context}\n"
-            f"<code>{error_str}</code>"
+            f"<b>⚠️ Error</b>: {_html_escape(context)}\n"
+            f"<b>{_html_escape(error_type)}</b>: "
+            f"<code>{_html_escape(error_str)}</code>"
         )
+        if details:
+            if len(details) > 1000:
+                details = details[:1000] + "..."
+            msg += f"\n<b>Details:</b>\n<code>{_html_escape(details)}</code>"
         self.send_sync(msg)
+
+
+def _html_escape(s: str) -> str:
+    """Minimal HTML escape for Telegram message bodies."""
+    return (
+        s.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+    )

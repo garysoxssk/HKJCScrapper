@@ -315,12 +315,37 @@ class TestTGMessageClientNotify:
             client = TGMessageClient(enabled_settings)
             client.send_sync = MagicMock()
 
-            long_error = ValueError("x" * 300)
+            long_error = ValueError("x" * 1500)
             client.notify_error("Fetch FB4233", long_error)
             msg = client.send_sync.call_args[0][0]
-            # Message should contain truncated error (200 chars + "...")
+            # Cap raised to 1000 — anything above must be truncated.
             assert "..." in msg
             assert "Fetch FB4233" in msg
+
+    def test_notify_error_with_details(self, enabled_settings):
+        with patch.object(TGMessageClient, "_start_event_loop_thread"):
+            client = TGMessageClient(enabled_settings)
+            client.send_sync = MagicMock()
+
+            client.notify_error(
+                "Discovery cycle",
+                ValueError("bad payload"),
+                details="featureStartTime: Input should be a valid string (got NoneType)",
+            )
+            msg = client.send_sync.call_args[0][0]
+            assert "Details" in msg
+            assert "featureStartTime" in msg
+            assert "NoneType" in msg
+
+    def test_notify_error_includes_exception_type(self, enabled_settings):
+        with patch.object(TGMessageClient, "_start_event_loop_thread"):
+            client = TGMessageClient(enabled_settings)
+            client.send_sync = MagicMock()
+
+            import requests
+            client.notify_error("Fetch FB1234", requests.Timeout("slow"))
+            msg = client.send_sync.call_args[0][0]
+            assert "Timeout" in msg
 
 
 # ============================================================================

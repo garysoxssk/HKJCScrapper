@@ -1,13 +1,40 @@
 """API response parser - transforms raw JSON into Pydantic models."""
 
+import json
+import logging
 from typing import Optional
 
+from pydantic import ValidationError
+
 from hkjc_scrapper.models import Match, WatchRule
+
+logger = logging.getLogger(__name__)
+
+
+def format_validation_errors(exc: ValidationError, limit: int = 5) -> str:
+    """Format a pydantic ValidationError as a short human-readable string.
+
+    Each error line: 'field.path: msg (got <input_type>)'
+    """
+    lines = []
+    for err in exc.errors()[:limit]:
+        loc = ".".join(str(p) for p in err.get("loc", ()))
+        msg = err.get("msg", "")
+        input_val = err.get("input")
+        input_type = type(input_val).__name__
+        lines.append(f"{loc}: {msg} (got {input_type})")
+    extra = len(exc.errors()) - limit
+    if extra > 0:
+        lines.append(f"... and {extra} more error(s)")
+    return "\n".join(lines)
 
 
 def parse_matches_response(raw_json: dict) -> list[Match]:
     """
     Parse raw API response into Match models.
+
+    Malformed individual matches are logged and skipped — the cycle should
+    not abort because one match has a contract violation.
 
     Args:
         raw_json: Raw JSON response from HKJC API
@@ -16,8 +43,7 @@ def parse_matches_response(raw_json: dict) -> list[Match]:
         List of validated Match objects
 
     Raises:
-        ValueError: If response structure is invalid
-        pydantic.ValidationError: If match data doesn't match schema
+        ValueError: If response structure is invalid (missing data/matches keys)
     """
     if "data" not in raw_json:
         raise ValueError("Invalid response: missing 'data' field")
@@ -30,8 +56,28 @@ def parse_matches_response(raw_json: dict) -> list[Match]:
     if not isinstance(matches_data, list):
         raise ValueError("Invalid response: 'matches' must be a list")
 
-    # Parse each match into a Pydantic model
-    matches = [Match(**match_data) for match_data in matches_data]
+    matches: list[Match] = []
+    skipped = 0
+    for match_data in matches_data:
+        try:
+            matches.append(Match(**match_data))
+        except ValidationError as e:
+            skipped += 1
+            match_id = match_data.get("id") if isinstance(match_data, dict) else None
+            feid = match_data.get("frontEndId") if isinstance(match_data, dict) else None
+            logger.warning(
+                "Skipping malformed match (id=%s frontEndId=%s):\n%s\npayload=%s",
+                match_id,
+                feid,
+                format_validation_errors(e),
+                json.dumps(match_data, default=str)[:1000],
+            )
+
+    if skipped:
+        logger.warning(
+            "parse_matches_response: skipped %d malformed match(es), %d ok",
+            skipped, len(matches),
+        )
 
     return matches
 

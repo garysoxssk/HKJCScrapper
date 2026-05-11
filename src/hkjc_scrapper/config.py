@@ -50,6 +50,9 @@ class Settings(BaseSettings):
 
     # HKJC API settings
     GRAPHQL_ENDPOINT: str = "https://info.cld.hkjc.com/graphql/base/"
+    HKJC_REQUEST_TIMEOUT_SECONDS: int = 30
+    HKJC_MAX_RETRIES: int = 3
+    HKJC_RETRY_BACKOFF_SECONDS: float = 1.0
 
     # Scheduler settings
     DISCOVERY_INTERVAL_SECONDS: int = 900  # 15 minutes

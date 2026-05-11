@@ -8,15 +8,20 @@ Two-layer architecture:
 Tournament discovery is also run during each discovery cycle.
 """
 
+import json
 import logging
 import signal
 import threading
+import time
 from datetime import datetime, timedelta, timezone
+from typing import Callable, TypeVar
 
+import requests
 from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.date import DateTrigger
 from apscheduler.triggers.interval import IntervalTrigger
+from pydantic import ValidationError
 
 from hkjc_scrapper.client import HKJCGraphQLClient
 from hkjc_scrapper.config import Settings
@@ -24,12 +29,132 @@ from hkjc_scrapper.db import MongoDBClient
 from hkjc_scrapper.models import Match, Observation, WatchRule
 from hkjc_scrapper.parser import (
     filter_matches_by_rule,
+    format_validation_errors,
     get_match_description,
     parse_matches_response,
 )
 from hkjc_scrapper.tg_msg_client import TGMessageClient
 
 logger = logging.getLogger(__name__)
+
+T = TypeVar("T")
+
+
+# Retryable network exceptions (transport-level only; HTTP 4xx/5xx and parse
+# errors are intentionally NOT retried — see compute_retry_budget docstring).
+_RETRYABLE_EXCEPTIONS = (
+    requests.Timeout,
+    requests.ConnectionError,
+    requests.exceptions.ChunkedEncodingError,
+)
+
+
+def compute_retry_budget(
+    interval_seconds: int | None,
+    timeout_seconds: int,
+    backoff_seconds: float,
+    max_retries_cap: int,
+    event_budget_seconds: int = 120,
+) -> int:
+    """Compute the maximum number of retries that fit within the schedule.
+
+    Rules:
+    - Continuous mode: budget is `interval_seconds - safety_margin (5s)`.
+    - Event/one-shot mode (interval_seconds is None): use a fixed budget
+      (default 120s) capped at max_retries_cap.
+
+    The number of retries that fit is `budget // (timeout + backoff)`.
+    Capped at max_retries_cap. Floor of zero.
+
+    Args:
+        interval_seconds: polling interval for continuous jobs, or None for event
+        timeout_seconds: per-request timeout
+        backoff_seconds: base backoff between attempts
+        max_retries_cap: absolute ceiling (e.g., 3)
+        event_budget_seconds: fixed budget for event jobs
+
+    Returns:
+        Max number of retries (NOT counting the initial attempt). 0 means
+        "no retries, just one attempt".
+    """
+    if interval_seconds is None:
+        budget = event_budget_seconds
+    else:
+        budget = interval_seconds - 5  # safety margin before next poll
+    if budget <= 0:
+        return 0
+    cost_per_attempt = timeout_seconds + max(backoff_seconds, 0)
+    if cost_per_attempt <= 0:
+        return max_retries_cap
+    fits = int(budget // cost_per_attempt)
+    return max(0, min(max_retries_cap, fits))
+
+
+def call_with_retry(
+    fn: Callable[[], T],
+    op_name: str,
+    settings: Settings,
+    interval_seconds: int | None = None,
+) -> T:
+    """Run `fn` with budget-aware retries on transient network failures.
+
+    Only transport-level exceptions (Timeout/ConnectionError/ChunkedEncoding)
+    are retried. HTTP 4xx/5xx, JSONDecodeError, ValidationError, etc. fall
+    through unchanged — those are not transient.
+
+    Args:
+        fn: callable that performs the network operation
+        op_name: short label for logs
+        settings: app settings (for timeout/backoff/cap)
+        interval_seconds: budget hint — polling interval for continuous,
+            None for event/one-shot
+    """
+    max_retries = compute_retry_budget(
+        interval_seconds=interval_seconds,
+        timeout_seconds=settings.HKJC_REQUEST_TIMEOUT_SECONDS,
+        backoff_seconds=settings.HKJC_RETRY_BACKOFF_SECONDS,
+        max_retries_cap=settings.HKJC_MAX_RETRIES,
+    )
+
+    attempt = 0
+    while True:
+        try:
+            return fn()
+        except _RETRYABLE_EXCEPTIONS as e:
+            if attempt >= max_retries:
+                logger.warning(
+                    "[Retry] %s failed after %d attempt(s) (cap=%d, interval=%s): %s",
+                    op_name, attempt + 1, max_retries, interval_seconds, e,
+                )
+                raise
+            backoff = settings.HKJC_RETRY_BACKOFF_SECONDS * (2 ** attempt)
+            logger.info(
+                "[Retry] %s attempt %d/%d failed (%s: %s), sleeping %.1fs",
+                op_name, attempt + 1, max_retries + 1,
+                type(e).__name__, e, backoff,
+            )
+            time.sleep(backoff)
+            attempt += 1
+
+
+def _truncate_for_log(raw, limit: int = 2000) -> str:
+    """Render a raw response as a truncated JSON string for logging."""
+    try:
+        return json.dumps(raw, default=str)[:limit]
+    except (TypeError, ValueError):
+        return str(raw)[:limit]
+
+
+def _notify_error_with_details(
+    tg: TGMessageClient | None, context: str, error: Exception
+) -> None:
+    """Send a TG error notification, including formatted ValidationError details."""
+    if not tg:
+        return
+    details = None
+    if isinstance(error, ValidationError):
+        details = format_validation_errors(error)
+    tg.notify_error(context, error, details=details)
 
 
 def _extract_odds_details(foPools) -> list[dict]:
@@ -247,6 +372,7 @@ class MatchScheduler:
                         "front_end_id": job_doc["front_end_id"],
                         "odds_types": job_doc["odds_types"],
                         "dedup_key": dedup_key,
+                        "interval_seconds": None,
                     },
                 )
                 reloaded += 1
@@ -285,6 +411,7 @@ class MatchScheduler:
                         "front_end_id": job_doc["front_end_id"],
                         "odds_types": job_doc["odds_types"],
                         "dedup_key": dedup_key,
+                        "interval_seconds": interval,
                     },
                 )
                 reloaded += 1
@@ -321,8 +448,20 @@ class MatchScheduler:
             self._discover_tournaments()
 
             # 2. Fetch basic match list (no odds - lightweight)
-            raw = self.client.send_basic_match_list_request()
-            matches = parse_matches_response(raw)
+            raw = call_with_retry(
+                self.client.send_basic_match_list_request,
+                op_name="discovery basic_match_list",
+                settings=self.settings,
+                interval_seconds=self.settings.DISCOVERY_INTERVAL_SECONDS,
+            )
+            try:
+                matches = parse_matches_response(raw)
+            except Exception:
+                logger.exception(
+                    "[Discovery] Failed to parse basic match list. raw=%s",
+                    _truncate_for_log(raw),
+                )
+                raise
             logger.info("[Discovery] Found %d matches from HKJC", len(matches))
 
             # 3. Load enabled watch rules
@@ -380,13 +519,17 @@ class MatchScheduler:
 
         except Exception as e:
             logger.exception("[Discovery] Error during discovery cycle")
-            if self.tg:
-                self.tg.notify_error("Discovery cycle", e)
+            _notify_error_with_details(self.tg, "Discovery cycle", e)
 
     def _discover_tournaments(self):
         """Fetch and upsert tournament list from API."""
         try:
-            response = self.client.send_tournament_list_request()
+            response = call_with_retry(
+                self.client.send_tournament_list_request,
+                op_name="tournament_list",
+                settings=self.settings,
+                interval_seconds=self.settings.DISCOVERY_INTERVAL_SECONDS,
+            )
             tournaments = response.get("data", {}).get("tournamentList", [])
             if tournaments:
                 result = self.db.upsert_tournaments(tournaments)
@@ -459,6 +602,7 @@ class MatchScheduler:
                         "front_end_id": match.frontEndId,
                         "odds_types": obs.odds_types,
                         "dedup_key": dedup_key,
+                        "interval_seconds": None,
                     },
                 )
                 self._scheduled_keys.add(dedup_key)
@@ -528,6 +672,7 @@ class MatchScheduler:
                     "front_end_id": match.frontEndId,
                     "odds_types": obs.odds_types,
                     "dedup_key": dedup_key,
+                    "interval_seconds": interval,
                 },
             )
             self._scheduled_keys.add(dedup_key)
@@ -566,6 +711,7 @@ class MatchScheduler:
         front_end_id: str,
         odds_types: list[str],
         dedup_key: str | None = None,
+        interval_seconds: int | None = None,
     ):
         """Execute a fetch job: call API, parse, save to DB.
 
@@ -574,6 +720,8 @@ class MatchScheduler:
             front_end_id: Display match ID (e.g., FB4342)
             odds_types: Odds type codes to fetch
             dedup_key: Optional dedup key for DB cleanup after execution
+            interval_seconds: Polling interval (continuous jobs) used to
+                compute the retry budget. None for event/one-shot jobs.
         """
         logger.info(
             "[Fetch] Fetching %s for %s (id=%s)",
@@ -582,12 +730,25 @@ class MatchScheduler:
             match_id,
         )
 
+        raw = None
         try:
-            raw = self.client.send_detailed_match_list_request(
-                odds_types=odds_types,
+            raw = call_with_retry(
+                lambda: self.client.send_detailed_match_list_request(
+                    odds_types=odds_types,
+                ),
+                op_name=f"fetch {front_end_id}",
+                settings=self.settings,
+                interval_seconds=interval_seconds,
             )
 
-            matches = parse_matches_response(raw)
+            try:
+                matches = parse_matches_response(raw)
+            except Exception:
+                logger.exception(
+                    "[Fetch] Failed to parse response for %s. raw=%s",
+                    front_end_id, _truncate_for_log(raw),
+                )
+                raise
 
             # Find our specific match
             target = None
@@ -628,8 +789,7 @@ class MatchScheduler:
 
         except Exception as e:
             logger.exception("[Fetch] Error fetching %s", front_end_id)
-            if self.tg:
-                self.tg.notify_error(f"Fetch {front_end_id}", e)
+            _notify_error_with_details(self.tg, f"Fetch {front_end_id}", e)
 
         # Clean up persistent schedule entry
         if dedup_key:
@@ -678,8 +838,20 @@ class MatchScheduler:
             self._discover_tournaments()
 
             # Fetch all matches (no odds - lightweight)
-            raw = self.client.send_basic_match_list_request()
-            matches = parse_matches_response(raw)
+            raw = call_with_retry(
+                self.client.send_basic_match_list_request,
+                op_name="run_once basic_match_list",
+                settings=self.settings,
+                interval_seconds=None,
+            )
+            try:
+                matches = parse_matches_response(raw)
+            except Exception:
+                logger.exception(
+                    "[Once] Failed to parse basic match list. raw=%s",
+                    _truncate_for_log(raw),
+                )
+                raise
             logger.info("[Once] Found %d matches from HKJC", len(matches))
 
             # Load rules
@@ -716,11 +888,23 @@ class MatchScheduler:
             )
 
             # Fetch with odds
-            raw = self.client.fetch_matches_for_odds(
-                odds_types=list(all_odds_types),
-                with_preflight=True,
+            raw = call_with_retry(
+                lambda: self.client.fetch_matches_for_odds(
+                    odds_types=list(all_odds_types),
+                    with_preflight=True,
+                ),
+                op_name="run_once fetch_matches_for_odds",
+                settings=self.settings,
+                interval_seconds=None,
             )
-            all_matches = parse_matches_response(raw)
+            try:
+                all_matches = parse_matches_response(raw)
+            except Exception:
+                logger.exception(
+                    "[Once] Failed to parse detailed match list. raw=%s",
+                    _truncate_for_log(raw),
+                )
+                raise
 
             # Filter to matched matches only
             target_matches = [
