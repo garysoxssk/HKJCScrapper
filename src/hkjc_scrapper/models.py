@@ -87,7 +87,7 @@ class Tournament(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     id: str
-    frontEndId: str = ""
+    frontEndId: Optional[str] = None
     nameProfileId: Optional[str] = None
     isInteractiveServiceAvailable: bool = False
     code: str
@@ -174,10 +174,10 @@ class FoPool(BaseModel):
     oddsType: str  # Will validate against OddsType enum in parser
     instNo: int = 0
     inplay: bool = False
-    name_ch: str = ""
-    name_en: str = ""
+    name_ch: Optional[str] = None
+    name_en: Optional[str] = None
     updateAt: str
-    expectedSuspendDateTime: str = ""
+    expectedSuspendDateTime: Optional[str] = None
     lines: list[Line] = []
 
 
@@ -250,8 +250,8 @@ class Match(BaseModel):
     venue: Optional[Venue] = None
     tvChannels: list[TvChannel] = []
     liveEvents: list[LiveEvent] = []
-    featureStartTime: str = ""
-    featureMatchSequence: str = ""
+    featureStartTime: Optional[str] = None
+    featureMatchSequence: Optional[str] = None
     poolInfo: Optional[PoolInfo] = None
     runningResult: Optional[RunningResult] = None
     runningResultExtra: Optional[RunningResult] = None

@@ -50,6 +50,9 @@ class Settings(BaseSettings):
 
     # HKJC API settings
     GRAPHQL_ENDPOINT: str = "https://info.cld.hkjc.com/graphql/base/"
+    HKJC_REQUEST_TIMEOUT_SECONDS: int = 30
+    HKJC_MAX_RETRIES: int = 3
+    HKJC_RETRY_BACKOFF_SECONDS: float = 1.0
 
     # Scheduler settings
     DISCOVERY_INTERVAL_SECONDS: int = 900  # 15 minutes
@@ -73,6 +76,7 @@ class Settings(BaseSettings):
     # Telegram command listener settings
     TG_COMMANDS_ENABLED: bool = True
     TG_COMMAND_ALLOWED_USERS: str = ""  # Comma-separated Telegram user IDs (empty = allow all)
+    TG_PAGE_SIZE: int = 20  # Buttons per page in paginated commands (/matches, /fetch, /odds)
 
     # Timezone for display & logging (IANA name, e.g. Asia/Hong_Kong)
     APP_TIMEZONE: str = "Asia/Hong_Kong"

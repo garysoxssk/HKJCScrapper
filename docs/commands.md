@@ -114,7 +114,7 @@ View all persisted scheduled fetch jobs from the `scheduled_jobs` MongoDB collec
 uv run python -m hkjc_scrapper.cli list-jobs
 ```
 
-Example output:
+Example output (CLI `list-jobs`):
 ```
 Scheduled Jobs (3 jobs):
 #   FrontEndId   Type         Odds         Trigger/Window (HKT)              Created
@@ -123,6 +123,23 @@ Scheduled Jobs (3 jobs):
 2   FB4233       event        HAD,HHA      2026-04-07 19:30                  2026-04-06 12:00
 3   FB4234       event        HDC          2026-04-07 20:00                  2026-04-06 12:00
 ```
+
+Telegram `/jobs` output groups jobs by rule and shows team names:
+```
+Scheduled Jobs (3 total, 2 rule(s))
+
+— La Liga Big 3 (2 jobs)
+  1. Real Madrid vs Barcelona (FB4233) — HAD,HHA (event)
+     2026-04-07 19:30 HKT
+  2. Atletico vs Sevilla (FB4234) — HDC (event)
+     2026-04-07 20:00 HKT
+
+— UEFA Europa League (1 job)
+  1. Roma vs Eintracht (FB6755) — CHL (continuous)
+     every 300s, 03:00–04:45 Apr 07 HKT
+```
+
+Legacy job documents (inserted before the `rule_name` / `home_team` / `away_team` fields were added) fall under the `(legacy)` rule group; missing team names are looked up from `matches_current` at read time, falling back to `?` if the match has been removed.
 
 Shows "No scheduled jobs." if the collection is empty.
 
@@ -360,7 +377,7 @@ The following events send Telegram messages automatically when `TELEGRAM_ENABLED
 | **Rule enabled** | `enable-rule` | Rule name |
 | **Rule disabled** | `disable-rule` | Rule name |
 | **Rule deleted** | `delete-rule` | Rule name |
-| **Error** | Any scheduler/fetch error | Context, error message (truncated at 200 chars) |
+| **Error** | Any scheduler/fetch error | Context, exception type, and error message (truncated at 1000 chars). For `ValidationError`, also lists the offending field paths (e.g., `featureStartTime: ... (got NoneType)`). |
 
 ### Telegram Setup
 
@@ -396,10 +413,10 @@ Optionally restrict access by setting `TG_COMMAND_ALLOWED_USERS` to a comma-sepa
 |---------|-------------|
 | `/help` | Show all available commands |
 | `/status` | Show bot status: uptime, active rules |
-| `/jobs` | View scheduled fetch jobs from DB (times in HKT) |
-| `/matches` | List current matches from HKJC API |
-| `/fetch <frontEndId> <oddsTypes>` | Fetch and save odds for a match (e.g., `/fetch FB4233 HAD,HHA`) |
-| `/odds <frontEndId> [oddsType]` | Query stored odds history for a match |
+| `/jobs` | View scheduled fetch jobs from DB. Grouped by rule, with team names. Times in HKT. |
+| `/matches` | Browse current matches from HKJC API. Paginated; shows full English tournament names with code fallback. |
+| `/fetch <frontEndId> <oddsTypes>` | Fetch and save odds for a match (e.g., `/fetch FB4233 HAD,HHA`). The list-style entry is paginated. |
+| `/odds <frontEndId> [oddsType]` | Query stored odds history for a match. The list-style entry is paginated. |
 | `/rules` | List all watch rules with inline enable/disable/delete buttons |
 | `/addrule` | Start the interactive add-rule wizard (multi-step with inline buttons) |
 | `/enablerule <name>` | Enable a watch rule by name |
@@ -550,6 +567,9 @@ Set in `.env.local` / `.env.prod` or as OS environment variables:
 | `MONGODB_HOST` | | Atlas cluster host (for prod) |
 | `MONGODB_DATABASE` | `hkjc` | Database name |
 | `GRAPHQL_ENDPOINT` | `https://info.cld.hkjc.com/graphql/base/` | HKJC API URL |
+| `HKJC_REQUEST_TIMEOUT_SECONDS` | `30` | Per-request timeout for HKJC API calls (seconds) |
+| `HKJC_MAX_RETRIES` | `3` | Absolute cap on retries for transient transport errors. Effective retry count is `min(cap, budget // (timeout + backoff))` so retries never spill into the next polling interval. |
+| `HKJC_RETRY_BACKOFF_SECONDS` | `1.0` | Base backoff between retry attempts (doubled per attempt) |
 | `DISCOVERY_INTERVAL_SECONDS` | `900` | How often to discover matches (seconds) |
 | `APP_TIMEZONE` | `Asia/Hong_Kong` | IANA timezone for log timestamps and display |
 | `LOG_LEVEL` | `INFO` | Logging level (DEBUG, INFO, WARNING, ERROR) |
@@ -563,3 +583,4 @@ Set in `.env.local` / `.env.prod` or as OS environment variables:
 | `TG_DISCOVERY_INCLUDE_RULES` | `false` | Include per-rule breakdown in discovery notifications |
 | `TG_COMMANDS_ENABLED` | `false` | Enable interactive bot commands in Telegram |
 | `TG_COMMAND_ALLOWED_USERS` | *(empty)* | Comma-separated Telegram user IDs allowed to use commands (empty = all allowed) |
+| `TG_PAGE_SIZE` | `20` | Buttons per page for paginated bot commands (`/matches`, `/fetch`, `/odds`) |

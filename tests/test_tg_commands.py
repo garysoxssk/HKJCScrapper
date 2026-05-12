@@ -9,8 +9,13 @@ import pytest
 from hkjc_scrapper.tg_commands import (
     AddRuleWizard,
     TGCommandHandler,
+    _build_button_grid,
+    _format_job_line,
     _format_relative_to_kickoff,
     _format_rule_detail,
+    _group_jobs_by_rule,
+    _nav_row,
+    _paginate,
     _truncate,
     TG_MAX_LENGTH,
 )
@@ -20,10 +25,11 @@ from hkjc_scrapper.tg_commands import (
 # Fixtures
 # ============================================================================
 
-def _make_settings(allowed_users: str = ""):
+def _make_settings(allowed_users: str = "", page_size: int = 20):
     from zoneinfo import ZoneInfo
     s = MagicMock()
     s.TG_COMMAND_ALLOWED_USERS = allowed_users
+    s.TG_PAGE_SIZE = page_size
     s.tz = ZoneInfo("Asia/Hong_Kong")
     return s
 
@@ -607,10 +613,12 @@ class TestCmdJobs:
                 "created_at": datetime(2026, 4, 6, 10, 0, tzinfo=tz.utc),
             },
         ]
+        handler.db.matches_current.find.return_value = []
         event = _make_event(text="/jobs")
         _run(handler._cmd_jobs(event))
         msg = event.reply.call_args[0][0]
-        assert "Scheduled Jobs (2)" in msg
+        # New header format includes rule-group count
+        assert "Scheduled Jobs (2 total" in msg
         assert "FB6755" in msg
         assert "CHL" in msg
         assert "300s" in msg
@@ -618,7 +626,7 @@ class TestCmdJobs:
         assert "HAD" in msg
 
     def test_jobs_sorted_by_trigger_time(self):
-        """Jobs should be sorted by trigger time ascending."""
+        """Jobs should be sorted by trigger time ascending within each rule group."""
         from datetime import timezone as tz
         handler = _make_handler()
         handler.db.get_all_scheduled_jobs.return_value = [
@@ -637,10 +645,11 @@ class TestCmdJobs:
                 "created_at": datetime(2026, 4, 6, 10, 0, tzinfo=tz.utc),
             },
         ]
+        handler.db.matches_current.find.return_value = []
         event = _make_event(text="/jobs")
         _run(handler._cmd_jobs(event))
         msg = event.reply.call_args[0][0]
-        # FB_EARLIER should appear before FB_LATER
+        # FB_EARLIER should appear before FB_LATER (sorted within (legacy) group)
         assert msg.index("FB_EARLIER") < msg.index("FB_LATER")
 
 
@@ -778,3 +787,353 @@ class TestRegisterHandlers:
         handler.register_handlers()
         # client.on should have been called multiple times (once per handler)
         assert handler.client.on.call_count >= 10
+
+
+# ============================================================================
+# Pagination helpers (Enhancement 1)
+# ============================================================================
+
+class TestPaginate:
+
+    def test_empty_list(self):
+        slice_, total, page = _paginate([], page=1, page_size=20)
+        assert slice_ == []
+        assert total == 1
+        assert page == 1
+
+    def test_single_page(self):
+        items = list(range(15))
+        slice_, total, page = _paginate(items, page=1, page_size=20)
+        assert slice_ == items
+        assert total == 1
+        assert page == 1
+
+    def test_exact_page_boundary(self):
+        items = list(range(40))
+        slice_, total, page = _paginate(items, page=2, page_size=20)
+        assert slice_ == items[20:40]
+        assert total == 2
+        assert page == 2
+
+    def test_clamps_page_below_one(self):
+        slice_, total, page = _paginate(list(range(5)), page=0, page_size=20)
+        assert page == 1
+
+    def test_clamps_page_above_total(self):
+        items = list(range(50))
+        slice_, total, page = _paginate(items, page=99, page_size=20)
+        assert total == 3
+        assert page == 3
+        assert slice_ == items[40:50]
+
+    def test_page_size_clamped_to_one(self):
+        slice_, total, page = _paginate(list(range(3)), page=1, page_size=0)
+        # page_size clamped to 1 → 3 items = 3 pages
+        assert total == 3
+
+
+class TestBuildButtonGrid:
+
+    def test_two_col_when_all_short(self):
+        from telethon import Button
+        buttons = [Button.inline(f"X{i}", data=f"d:{i}".encode()) for i in range(4)]
+        rows = _build_button_grid(buttons)
+        assert len(rows) == 2
+        assert len(rows[0]) == 2 and len(rows[1]) == 2
+
+    def test_one_col_when_long_label(self):
+        from telethon import Button
+        buttons = [
+            Button.inline("Liverpool vs Manchester City", data=b"a"),
+            Button.inline("X", data=b"b"),
+        ]
+        rows = _build_button_grid(buttons)
+        # First label exceeds threshold → all rows are single-button
+        assert all(len(r) == 1 for r in rows)
+
+    def test_single_button(self):
+        from telethon import Button
+        rows = _build_button_grid([Button.inline("only", data=b"x")])
+        assert rows == [[rows[0][0]]]
+
+    def test_empty(self):
+        assert _build_button_grid([]) == []
+
+
+class TestNavRow:
+
+    def test_returns_none_for_single_page(self):
+        assert _nav_row(1, 1, b"prev", b"next") is None
+
+    def test_clamps_prev_on_first_page(self):
+        row = _nav_row(1, 5, b"prev", b"next")
+        # Prev callback should be the no-op
+        assert row[0].data == b"nop"
+        assert row[2].data == b"next"
+        assert "1 / 5" in row[1].text
+
+    def test_clamps_next_on_last_page(self):
+        row = _nav_row(5, 5, b"prev", b"next")
+        assert row[0].data == b"prev"
+        assert row[2].data == b"nop"
+        assert "5 / 5" in row[1].text
+
+    def test_middle_button_always_nop(self):
+        row = _nav_row(3, 7, b"prev", b"next")
+        assert row[1].data == b"nop"
+
+
+# ============================================================================
+# /jobs grouping + team-name fallback (Enhancement 2)
+# ============================================================================
+
+class TestGroupJobsByRule:
+
+    def test_groups_by_rule_name(self):
+        jobs = [
+            {"rule_name": "A", "front_end_id": "FB1"},
+            {"rule_name": "B", "front_end_id": "FB2"},
+            {"rule_name": "A", "front_end_id": "FB3"},
+        ]
+        groups = _group_jobs_by_rule(jobs)
+        assert set(groups.keys()) == {"A", "B"}
+        assert len(groups["A"]) == 2
+        assert len(groups["B"]) == 1
+
+    def test_legacy_bucket_for_missing_rule_name(self):
+        jobs = [
+            {"front_end_id": "FB1"},
+            {"rule_name": "", "front_end_id": "FB2"},
+            {"rule_name": "Real", "front_end_id": "FB3"},
+        ]
+        groups = _group_jobs_by_rule(jobs)
+        assert "(legacy)" in groups
+        assert len(groups["(legacy)"]) == 2
+        assert len(groups["Real"]) == 1
+
+
+class TestFormatJobLine:
+
+    def test_event_with_teams_and_rule(self):
+        from datetime import timezone as tz
+        from zoneinfo import ZoneInfo
+        job = {
+            "front_end_id": "FB1234",
+            "odds_types": ["HAD", "HHA"],
+            "job_type": "event",
+            "trigger_time": datetime(2026, 5, 12, 11, 30, tzinfo=tz.utc),
+            "home_team": "Real Madrid",
+            "away_team": "Barcelona",
+            "rule_name": "La Liga Big 3",
+        }
+        headline, window = _format_job_line(job, ZoneInfo("Asia/Hong_Kong"))
+        assert "Real Madrid" in headline
+        assert "Barcelona" in headline
+        assert "FB1234" in headline
+        assert "HKT" in window
+
+    def test_legacy_falls_back_to_question_marks(self):
+        from datetime import timezone as tz
+        from zoneinfo import ZoneInfo
+        job = {
+            "front_end_id": "FB1234",
+            "odds_types": ["HAD"],
+            "job_type": "event",
+            "trigger_time": datetime(2026, 5, 12, 11, 30, tzinfo=tz.utc),
+        }
+        headline, _ = _format_job_line(job, ZoneInfo("Asia/Hong_Kong"))
+        assert "? vs ?" in headline
+
+
+class TestCmdJobsGrouping:
+
+    def test_jobs_grouped_by_rule_in_output(self):
+        from datetime import timezone as tz
+        handler = _make_handler()
+        handler.db.get_all_scheduled_jobs.return_value = [
+            {
+                "front_end_id": "FB1",
+                "job_type": "event",
+                "odds_types": ["HAD"],
+                "trigger_time": datetime(2026, 5, 12, 11, 30, tzinfo=tz.utc),
+                "rule_name": "Rule A",
+                "home_team": "Madrid",
+                "away_team": "Barca",
+            },
+            {
+                "front_end_id": "FB2",
+                "job_type": "event",
+                "odds_types": ["HHA"],
+                "trigger_time": datetime(2026, 5, 12, 14, 0, tzinfo=tz.utc),
+                "rule_name": "Rule B",
+                "home_team": "Liverpool",
+                "away_team": "Chelsea",
+            },
+        ]
+        handler.db.matches_current.find.return_value = []
+        event = _make_event(text="/jobs")
+        _run(handler._cmd_jobs(event))
+        msg = event.reply.call_args[0][0]
+        assert "Rule A" in msg
+        assert "Rule B" in msg
+        assert "Madrid vs Barca" in msg
+        assert "Liverpool vs Chelsea" in msg
+        assert "2 total, 2 rule(s)" in msg
+
+    def test_jobs_enriches_legacy_team_names_from_db(self):
+        from datetime import timezone as tz
+        handler = _make_handler()
+        handler.db.get_all_scheduled_jobs.return_value = [
+            {
+                "front_end_id": "FB_OLD",
+                "job_type": "event",
+                "odds_types": ["HAD"],
+                "trigger_time": datetime(2026, 5, 12, 11, 30, tzinfo=tz.utc),
+                # No rule_name, no home/away → triggers enrichment
+            },
+        ]
+        handler.db.matches_current.find.return_value = [
+            {
+                "frontEndId": "FB_OLD",
+                "homeTeam": {"name_en": "Looked Up Home"},
+                "awayTeam": {"name_en": "Looked Up Away"},
+            }
+        ]
+        event = _make_event(text="/jobs")
+        _run(handler._cmd_jobs(event))
+        msg = event.reply.call_args[0][0]
+        assert "Looked Up Home" in msg
+        assert "Looked Up Away" in msg
+        assert "(legacy)" in msg
+
+
+# ============================================================================
+# /matches full tournament name (Enhancement 3)
+# ============================================================================
+
+class TestGroupMatchesByTournament:
+
+    def _make_match(self, code: str, name_en: str = "", home: str = "H", away: str = "A"):
+        from hkjc_scrapper.models import Match, Team, Tournament
+        return Match(
+            id=f"id-{code}-{home}",
+            frontEndId=f"FB-{code}-{home}",
+            matchDate="2026-05-12+08:00",
+            kickOffTime="2026-05-12T20:00:00.000+08:00",
+            status="SCHEDULED",
+            updateAt="2026-05-12T10:00:00.000+08:00",
+            homeTeam=Team(id="t1", name_en=home, name_ch=home),
+            awayTeam=Team(id="t2", name_en=away, name_ch=away),
+            tournament=Tournament(
+                id=f"tn-{code}", code=code, name_en=name_en, name_ch=""
+            ),
+        )
+
+    def test_prefers_full_name_falls_back_to_code(self):
+        handler = _make_handler()
+        matches = [
+            self._make_match("EPL", "English Premier League"),
+            self._make_match("EPL", "English Premier League", home="X"),
+            # Same code, this time name_en is empty — should not overwrite
+            self._make_match("EPL", "", home="Y"),
+            # Code with no name_en at all
+            self._make_match("XXX", "", home="Z"),
+        ]
+        groups = handler._group_matches_by_tournament(matches)
+        # Sorted by name_en (English Premier League → 'e') then by 'XXX' → 'X' alphabetical
+        codes = [g[0] for g in groups]
+        assert "EPL" in codes
+        assert "XXX" in codes
+        epl = next(g for g in groups if g[0] == "EPL")
+        assert epl[1] == "English Premier League"  # name_en
+        assert epl[2] == 3  # count
+        xxx = next(g for g in groups if g[0] == "XXX")
+        assert xxx[1] == ""  # no name_en, label will fall back to code
+
+    def test_label_uses_name_en_when_available(self):
+        handler = _make_handler()
+        matches = [
+            self._make_match("UCL", "UEFA Champions League"),
+        ]
+        groups = handler._group_matches_by_tournament(matches)
+        text, rows = handler._build_tournament_page(groups, page=1)
+        # Find the actual tournament button (Cancel is also in rows)
+        labels = [
+            b.text for row in rows for b in row
+            if b.data not in (b"cancel", b"nop")
+        ]
+        assert any("UEFA Champions League" in label for label in labels)
+
+
+# ============================================================================
+# _cmd_matches / _cmd_fetch / _cmd_odds — pagination smoke (Enhancement 1)
+# ============================================================================
+
+class TestPaginatedCommands:
+
+    def _make_match(self, idx: int):
+        from hkjc_scrapper.models import Match, Team, Tournament
+        return Match(
+            id=f"id{idx}",
+            frontEndId=f"FB{1000 + idx}",
+            matchDate="2026-05-12+08:00",
+            kickOffTime="2026-05-12T20:00:00.000+08:00",
+            status="SCHEDULED",
+            updateAt="2026-05-12T10:00:00.000+08:00",
+            homeTeam=Team(id="t1", name_en=f"Home{idx}", name_ch="h"),
+            awayTeam=Team(id="t2", name_en=f"Away{idx}", name_ch="a"),
+            tournament=Tournament(
+                id="tn1", code="EPL", name_en="English Premier League", name_ch=""
+            ),
+        )
+
+    def test_cmd_fetch_paginates_full_list(self):
+        handler = _make_handler()
+        handler.settings.TG_PAGE_SIZE = 5
+        matches = [self._make_match(i) for i in range(12)]
+        # Mock the API → parse_matches_response pipeline at the boundary
+        with patch("hkjc_scrapper.parser.parse_matches_response", return_value=matches):
+            event = _make_event(text="/fetch")
+            _run(handler._cmd_fetch(event))
+        msg = event.reply.call_args[0][0]
+        kwargs = event.reply.call_args[1]
+        # 12 / 5 = 3 pages, first page shows "1/3"
+        assert "page 1/3" in msg
+        # Nav row present
+        button_data = [b.data for row in kwargs["buttons"] for b in row]
+        assert any(b == b"f:p:2" for b in button_data)
+
+    def test_cmd_odds_paginates_db_matches(self):
+        handler = _make_handler()
+        handler.settings.TG_PAGE_SIZE = 3
+        handler.db.matches_current.find.return_value = [
+            {
+                "frontEndId": f"FB{i}",
+                "homeTeam": {"name_en": f"H{i}"},
+                "awayTeam": {"name_en": f"A{i}"},
+            }
+            for i in range(7)
+        ]
+        event = _make_event(text="/odds")
+        _run(handler._cmd_odds(event))
+        msg = event.reply.call_args[0][0]
+        # 7 / 3 = 3 pages
+        assert "page 1/3" in msg
+
+    def test_cmd_matches_paginates_tournament_list(self):
+        handler = _make_handler()
+        handler.settings.TG_PAGE_SIZE = 2
+        matches = [self._make_match(i) for i in range(5)]
+        # Make matches span 4 tournament codes for variety
+        for i, m in enumerate(matches):
+            from hkjc_scrapper.models import Tournament
+            code = ["EPL", "LLG", "UCL", "FRA", "EPL"][i]
+            name = ["EPL Full", "La Liga", "Champions Lg", "Ligue 1", "EPL Full"][i]
+            m.tournament = Tournament(id=f"tn{i}", code=code, name_en=name, name_ch="")
+
+        with patch("hkjc_scrapper.parser.parse_matches_response", return_value=matches):
+            event = _make_event(text="/matches")
+            _run(handler._cmd_matches(event))
+        msg = event.reply.call_args[0][0]
+        # 4 unique codes, page_size=2 → 2 pages
+        assert "page 1/2" in msg

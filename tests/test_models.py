@@ -55,6 +55,27 @@ def test_match_model_missing_required_field():
         )
 
 
+def test_match_model_accepts_null_feature_fields(sample_match):
+    """Match should parse when API returns null for featureStartTime /
+    featureMatchSequence — these are display-only fields and we've seen the
+    API send null."""
+    data = sample_match.model_dump()
+    data["featureStartTime"] = None
+    data["featureMatchSequence"] = None
+    m = Match(**data)
+    assert m.featureStartTime is None
+    assert m.featureMatchSequence is None
+
+
+def test_match_model_strict_on_front_end_id(sample_match):
+    """Match.frontEndId is load-bearing (DB unique index, dedup keys) — must
+    fail loud if the API ever sends null here."""
+    data = sample_match.model_dump()
+    data["frontEndId"] = None
+    with pytest.raises(ValidationError):
+        Match(**data)
+
+
 def test_watch_rule_model():
     """Test WatchRule model."""
     rule = WatchRule(

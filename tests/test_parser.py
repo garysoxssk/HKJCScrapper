@@ -1,12 +1,14 @@
 """Unit tests for parser.py."""
 
 import pytest
+from pydantic import ValidationError
 
 from hkjc_scrapper.models import Match, WatchRule, MatchFilter, Observation, Schedule, ScheduleTrigger
 from hkjc_scrapper.parser import (
     parse_matches_response,
     filter_matches_by_rule,
     filter_fopools_by_odds_types,
+    format_validation_errors,
     get_match_description,
 )
 
@@ -136,3 +138,30 @@ def test_get_match_description(sample_matches):
     """Test match description generation."""
     desc = get_match_description(sample_matches[0])
     assert desc == "San Diego FC vs CF Montreal"
+
+
+def test_parse_matches_response_skips_malformed(sample_response_data, caplog):
+    """One malformed match should be skipped and logged, valid ones returned."""
+    good = sample_response_data["data"]["matches"][0]
+    bad = {"id": "broken", "frontEndId": "FB0000"}  # missing required fields
+    payload = {"data": {"matches": [good, bad, good]}}
+
+    import logging
+    with caplog.at_level(logging.WARNING):
+        matches = parse_matches_response(payload)
+
+    assert len(matches) == 2
+    assert any("malformed" in rec.message.lower() for rec in caplog.records)
+    assert any("FB0000" in rec.message for rec in caplog.records)
+
+
+def test_format_validation_errors_includes_field_and_type():
+    """format_validation_errors should show field path and observed input type."""
+    try:
+        Match(id="x", frontEndId=None)
+    except ValidationError as e:
+        msg = format_validation_errors(e)
+        assert "frontEndId" in msg
+        assert "NoneType" in msg
+    else:
+        pytest.fail("Expected ValidationError")

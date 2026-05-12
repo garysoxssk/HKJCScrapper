@@ -9,6 +9,7 @@ Database name: configured via `MONGODB_DATABASE` env var (default: `hkjc`).
 | `matches_current` | Regular | Latest state of each match | `_id` (match ID) |
 | `odds_history` | Time-series | Append-only odds movement log | N/A (insert only) |
 | `watch_rules` | Regular | Configurable observation rules | `name` (unique) |
+| `scheduled_jobs` | Regular | Persisted APScheduler fetch jobs (survives restarts) | `dedup_key` (unique) |
 | `odds_types_ref` | Regular | Odds type code translations | `code` |
 | `tournaments_ref` | Regular | Tournament metadata from API | `id` (tournament ID) |
 
@@ -69,8 +70,8 @@ Upserted on each fetch. Keyed by HKJC match ID (`_id`). Contains the full latest
   "liveEvents": [
     { "id": "61301051", "code": "BETRADAR" }
   ],
-  "featureStartTime": "",
-  "featureMatchSequence": "",
+  "featureStartTime": null,
+  "featureMatchSequence": null,
   "poolInfo": {
     "normalPools": ["HAD", "HHA", "HDC", "HIL", "CHL", "..."],
     "inplayPools": ["HAD", "HHA", "..."],
@@ -104,7 +105,7 @@ Upserted on each fetch. Keyed by HKJC match ID (`_id`). Contains the full latest
       "name_ch": "主客和",
       "name_en": "HAD",
       "updateAt": "2026-02-22T12:00:00.000+08:00",
-      "expectedSuspendDateTime": "",
+      "expectedSuspendDateTime": null,
       "lines": [
         {
           "lineId": "L001",
@@ -130,6 +131,14 @@ Upserted on each fetch. Keyed by HKJC match ID (`_id`). Contains the full latest
   "fetchedAt": "2026-02-22T14:00:00.000Z"
 }
 ```
+
+### Nullable Fields
+
+The following fields may be `null` (the HKJC API sends `null` for some matches). Treat them as optional in queries:
+
+- `featureStartTime`, `featureMatchSequence` (top-level)
+- `tournament.frontEndId`
+- `foPools[].name_en`, `foPools[].name_ch`, `foPools[].expectedSuspendDateTime`
 
 ### Sample Queries
 
@@ -405,6 +414,93 @@ db.tournaments_ref.findOne({ id: "50050013" })
 
 // Search by name
 db.tournaments_ref.find({ name_en: /premier/i })
+```
+
+---
+
+## scheduled_jobs
+
+Persisted scheduled fetch jobs. Survives bot restarts: on startup the scheduler reloads any future jobs from this collection back into APScheduler. Documents are deleted when their work is complete (see Cleanup below).
+
+### Indexes
+
+| Index | Fields | Options |
+|-------|--------|---------|
+| Primary | `_id` | unique (default) |
+| dedup_key | `dedup_key` | unique |
+| trigger_time | `trigger_time` | |
+| end_time | `end_time` | |
+
+### Document Structure — `event` job
+
+One-shot fetch at a specific time (e.g., 30 min before kickoff).
+
+```json
+{
+  "_id": "<ObjectId>",
+  "dedup_key": "50062141:HAD,HHA:2026-05-12T11:30:00+00:00",
+  "job_type": "event",
+  "match_id": "50062141",
+  "front_end_id": "FB4233",
+  "odds_types": ["HAD", "HHA"],
+  "trigger_time": "2026-05-12T11:30:00.000Z",
+  "created_at": "2026-05-12T08:00:00.000Z",
+  "rule_name": "La Liga Big 3",
+  "home_team": "Real Madrid",
+  "away_team": "Barcelona"
+}
+```
+
+### Document Structure — `continuous` job
+
+Recurring fetch at a fixed interval inside a time window (e.g., every 5 min from kickoff to fulltime).
+
+```json
+{
+  "_id": "<ObjectId>",
+  "dedup_key": "50062141:CHL:continuous:2026-05-12T12:00:00+00:00",
+  "job_type": "continuous",
+  "match_id": "50062141",
+  "front_end_id": "FB4233",
+  "odds_types": ["CHL"],
+  "interval_seconds": 300,
+  "start_time": "2026-05-12T12:00:00.000Z",
+  "end_time": "2026-05-12T13:45:00.000Z",
+  "created_at": "2026-05-12T08:00:00.000Z",
+  "rule_name": "La Liga Corners Live",
+  "home_team": "Real Madrid",
+  "away_team": "Barcelona"
+}
+```
+
+### Legacy Documents
+
+`rule_name`, `home_team`, `away_team` were added in a later commit. Documents inserted before that point may omit these fields. Readers (Telegram `/jobs` and CLI `list-jobs`) fall back to `(legacy)` for the rule name and look up team names from `matches_current` by `front_end_id`.
+
+### Cleanup
+
+- **Event jobs** are deleted from the collection immediately after they fire.
+- **Continuous jobs** are deleted when their window has ended (i.e., `end_time <= now`).
+- **Sweep on discovery**: each discovery cycle calls `delete_expired_scheduled_jobs(now)` to clean up any jobs whose `end_time` (continuous) or `trigger_time` (event) has passed without being deleted by the normal path (e.g., process killed mid-fetch).
+
+### Sample Queries
+
+```javascript
+// All scheduled jobs (sorted by trigger time)
+db.scheduled_jobs.find().sort({ trigger_time: 1 })
+
+// Jobs for a specific rule
+db.scheduled_jobs.find({ rule_name: "La Liga Big 3" })
+
+// All continuous jobs active right now
+db.scheduled_jobs.find({
+  job_type: "continuous",
+  start_time: { $lte: new Date() },
+  end_time: { $gte: new Date() }
+})
+
+// Legacy jobs (no rule_name attribution)
+db.scheduled_jobs.find({ rule_name: { $exists: false } })
 ```
 
 ---

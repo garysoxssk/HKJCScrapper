@@ -1,11 +1,15 @@
 """HKJC GraphQL API client with browser simulation."""
 
+import json
+import logging
 import time
 from typing import Optional
 
 import requests
 
 from hkjc_scrapper.config import Settings
+
+logger = logging.getLogger(__name__)
 
 
 # GraphQL query templates
@@ -149,6 +153,13 @@ TOURNAMENT_LIST_QUERY = """
   """
 
 
+def _short_vars(variables: dict) -> str:
+    """Format a compact subset of request variables for log context."""
+    keys = ("fbOddsTypes", "fbOddsTypesM", "startIndex", "endIndex", "matchIds", "frontEndIds")
+    subset = {k: variables[k] for k in keys if k in variables and variables[k] is not None}
+    return json.dumps(subset, default=str)
+
+
 class HKJCGraphQLClient:
     """Client for HKJC GraphQL API with browser simulation."""
 
@@ -174,6 +185,48 @@ class HKJCGraphQLClient:
             "sec-ch-ua-mobile": "?0",
             "sec-ch-ua-platform": '"Windows"',
         })
+
+    def _post_graphql(self, payload: dict, op_name: str) -> dict:
+        """Send a GraphQL POST, logging request context and response body on errors.
+
+        Raises:
+            requests.Timeout / requests.ConnectionError on network failure.
+            requests.HTTPError on non-2xx.
+            json.JSONDecodeError if the body isn't valid JSON.
+        """
+        timeout = self.settings.HKJC_REQUEST_TIMEOUT_SECONDS
+        variables = payload.get("variables", {})
+
+        try:
+            response = self.session.post(self.endpoint, json=payload, timeout=timeout)
+        except requests.Timeout:
+            logger.warning(
+                "HKJC API %s timed out after %ds (variables=%s)",
+                op_name, timeout, _short_vars(variables),
+            )
+            raise
+        except requests.ConnectionError as e:
+            logger.warning(
+                "HKJC API %s connection error: %s (variables=%s)",
+                op_name, e, _short_vars(variables),
+            )
+            raise
+
+        if response.status_code >= 400:
+            logger.error(
+                "HKJC API %s returned %d: %s",
+                op_name, response.status_code, response.text[:1000],
+            )
+            response.raise_for_status()
+
+        try:
+            return response.json()
+        except json.JSONDecodeError:
+            logger.error(
+                "HKJC API %s returned non-JSON body: %s",
+                op_name, response.text[:1000],
+            )
+            raise
 
     def send_options_preflight(self) -> requests.Response:
         """Send OPTIONS preflight request for CORS."""
@@ -232,14 +285,7 @@ class HKJCGraphQLClient:
             "variables": variables,
         }
 
-        response = self.session.post(self.endpoint, json=payload, timeout=30)
-
-        # Log error response body for debugging
-        if response.status_code >= 400:
-            print(f"ERROR {response.status_code}: {response.text[:500]}")
-
-        response.raise_for_status()
-        return response.json()
+        return self._post_graphql(payload, op_name="basic_match_list")
 
     def send_detailed_match_list_request(
         self,
@@ -288,14 +334,7 @@ class HKJCGraphQLClient:
             "variables": variables,
         }
 
-        response = self.session.post(self.endpoint, json=payload, timeout=30)
-
-        # Log error response body for debugging
-        if response.status_code >= 400:
-            print(f"ERROR {response.status_code}: {response.text[:500]}")
-
-        response.raise_for_status()
-        return response.json()
+        return self._post_graphql(payload, op_name="detailed_match_list")
 
     def fetch_matches_for_odds(
         self,
@@ -345,10 +384,4 @@ class HKJCGraphQLClient:
             "variables": {},
         }
 
-        response = self.session.post(self.endpoint, json=payload, timeout=30)
-
-        if response.status_code >= 400:
-            print(f"ERROR {response.status_code}: {response.text[:500]}")
-
-        response.raise_for_status()
-        return response.json()
+        return self._post_graphql(payload, op_name="tournament_list")
